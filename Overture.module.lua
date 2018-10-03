@@ -43,15 +43,14 @@ local function BindToTag(Tag, Callback)
 	CollectionService:GetInstanceAddedSignal(Tag):Connect(Callback)
 	
 	for _, TaggedItem in next, CollectionService:GetTagged(Tag) do
-		spawn(function()
-			Callback(TaggedItem)
-		end)
+		Callback(TaggedItem)
 	end
 end
 
 function CollectionMetatable:__newindex(Index, Value)
-	self[Index] = Value
-
+	rawset(self, Index, Value)
+	if Index:sub(1, 1) == "_" then return end
+	
 	for Thread, ExpectedIndex in next, self._WaitCache do
 		if Index == ExpectedIndex then
 			coroutine.resume(Thread, require(Value))
@@ -93,8 +92,10 @@ do Module.Libraries = setmetatable({}, CollectionMetatable)
 			assert(IsClient, "The library \"" .. Index .. "\" does not exist!")
 			printd("The client is yielding for the library \"" .. Index .. "\".")
 
-			self.Libraries._WaitCache[coroutine.status()] = Index
+			self.Libraries._WaitCache[coroutine.running()] = Index
 			return coroutine.yield()
 		end
 	end
 end
+
+return Module
