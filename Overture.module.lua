@@ -78,7 +78,7 @@ do Module.Classes = setmetatable({}, CollectionMetatable)
 		end
 	end)
 
-	function Module:GetClass(Index)
+	function Module:LoadClass(Index)
 		if self.Classes[Index] then
 			return require(self.Classes[Index])
 		else
@@ -103,7 +103,7 @@ do Module.Libraries = setmetatable({}, CollectionMetatable)
 		end
 	end)
 
-	function Module:GetLibrary(Index)
+	function Module:LoadLibrary(Index)
 		if self.Libraries[Index] then
 			return require(self.Libraries[Index])
 		else
@@ -137,8 +137,6 @@ for SetName, SetClass in next, RetrievalSets do
 			return self["GetLocal" .. SetName](self, ItemName)
 		end
 	end
-	
-	print("Get" .. SetName, Module["Get" .. SetName])
 end
 
 do
