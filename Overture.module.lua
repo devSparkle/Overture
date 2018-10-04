@@ -13,9 +13,10 @@ local CollectionMetatable = {}
 --// Variables
 
 local DebugPrint = false
+
 local RetrievalSets = {
-	"RemoteEvents" = "RemoteEvent",
-	"RemoteFunctions" = "RemoteFunction"
+	["RemoteEvent"] = "RemoteEvent",
+	["RemoteFunction"] = "RemoteFunction"
 }
 
 --// Functions
@@ -105,16 +106,16 @@ end
 
 for SetName, SetClass in next, RetrievalSets do
 	local SetFolder = Retrieve(SetName, "Folder", ReplicatedStorage)
-
-	function Module["GetLocal" .. SetName](self, ItemName)
+	
+	Module["GetLocal" .. SetName] = function(self, ItemName)
 		return Retrieve(ItemName, SetClass, SetFolder)
 	end
-
-	function Module["WaitFor" .. SetName](self, ItemName)
+	
+	Module["WaitFor" .. SetName] = function(self, ItemName)
 		return SetFolder:WaitForChild(ItemName)
 	end
-
-	function Module["Get" .. SetName](self, ItemName)
+	
+	Module["Get" .. SetName] = function(self, ItemName)
 		local Item = SetFolder:FindFirstChild(ItemName)
 		if Item then return Item end
 		
@@ -124,6 +125,8 @@ for SetName, SetClass in next, RetrievalSets do
 			return self["GetLocal" .. SetName](self, ItemName)
 		end
 	end
+	
+	print("Get" .. SetName, Module["Get" .. SetName])
 end
 
 return Module
