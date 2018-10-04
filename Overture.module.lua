@@ -1,6 +1,8 @@
 --// Initialization
 
 local RunService = game:GetService("RunService")
+local PlayerService = game:GetService("Players")
+local StarterPlayer = game:GetService("StarterPlayer")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -65,10 +67,15 @@ function CollectionMetatable:__newindex(Index, Value)
 end
 
 do Module.Classes = setmetatable({}, CollectionMetatable)
+	Module.Classes._Folder = Retrieve("Classes", "Folder", ReplicatedStorage)
 	Module.Classes._WaitCache = {}
 
 	BindToTag("oClass", function(Object)
 		Module.Classes[Object.Name] = Object
+		
+		if CollectionService:HasTag(Object, "ForceReplicate") then
+			Object.Parent = Module.Classes._Folder
+		end
 	end)
 
 	function Module:GetClass(Index)
@@ -85,10 +92,15 @@ do Module.Classes = setmetatable({}, CollectionMetatable)
 end
 
 do Module.Libraries = setmetatable({}, CollectionMetatable)
+	Module.Libraries._Folder = Retrieve("Libraries", "Folder", ReplicatedStorage)
 	Module.Libraries._WaitCache = {}
 
 	BindToTag("oLibrary", function(Object)
 		Module.Libraries[Object.Name] = Object
+		
+		if CollectionService:HasTag(Object, "ForceReplicate") then
+			Object.Parent = Module.Libraries._Folder
+		end
 	end)
 
 	function Module:GetLibrary(Index)
