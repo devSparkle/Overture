@@ -141,4 +141,31 @@ for SetName, SetClass in next, RetrievalSets do
 	print("Get" .. SetName, Module["Get" .. SetName])
 end
 
+do
+	BindToTag("StarterCharacterScripts", function(Object)
+		if IsClient then
+			local Player = PlayerService.LocalPlayer
+			local Character = Player.Character
+			
+			if not Character then return end
+			if Character:FindFirstChild(Object.Name) then return end
+			
+			Object:Clone().Parent = Character
+		else
+			Object.Parent = StarterPlayer.StarterCharacterScripts
+		end
+	end)
+	
+	BindToTag("StarterPlayerScripts", function(Object)
+		if IsClient then
+			local Player = PlayerService.LocalPlayer
+			if Player:FindFirstChild(Object.Name, true) then return end
+			
+			Object:Clone().Parent = Player
+		else
+			Object.Parent = StarterPlayer.StarterPlayerScripts
+		end
+	end)
+end
+
 return Module
