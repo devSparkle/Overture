@@ -2,6 +2,7 @@
 
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local IsClient = RunService:IsClient()
@@ -12,6 +13,10 @@ local CollectionMetatable = {}
 --// Variables
 
 local DebugPrint = false
+local RetrievalSets = {
+	"RemoteEvents" = "RemoteEvent",
+	"RemoteFunctions" = "RemoteFunction"
+}
 
 --// Functions
 
@@ -94,6 +99,29 @@ do Module.Libraries = setmetatable({}, CollectionMetatable)
 
 			self.Libraries._WaitCache[coroutine.running()] = Index
 			return coroutine.yield()
+		end
+	end
+end
+
+for SetName, SetClass in next, RetrievalSets do
+	local SetFolder = Retrieve(SetName, "Folder", ReplicatedStorage)
+
+	function Module["GetLocal" .. SetName](self, ItemName)
+		return Retrieve(ItemName, SetClass, SetFolder)
+	end
+
+	function Module["WaitFor" .. SetName](self, ItemName)
+		return SetFolder:WaitForChild(ItemName)
+	end
+
+	function Module["Get" .. SetName](self, ItemName)
+		local Item = SetFolder:FindFirstChild(ItemName)
+		if Item then return Item end
+		
+		if IsClient then
+			return self["WaitFor" .. SetName](self, ItemName)
+		else
+			return self["GetLocal" .. SetName](self, ItemName)
 		end
 	end
 end
