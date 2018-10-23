@@ -69,7 +69,7 @@ end
 do Module.Classes = setmetatable({}, CollectionMetatable)
 	Module.Classes._Folder = Retrieve("Classes", "Folder", ReplicatedStorage)
 	Module.Classes._WaitCache = {}
-
+	
 	BindToTag("oClass", function(Object)
 		Module.Classes[Object.Name] = Object
 		
@@ -77,15 +77,15 @@ do Module.Classes = setmetatable({}, CollectionMetatable)
 			Object.Parent = Module.Classes._Folder
 		end
 	end)
-
+	
 	function Module:LoadClass(Index)
 		if self.Classes[Index] then
 			return require(self.Classes[Index])
 		else
 			assert(IsClient, "The class \"" .. Index .. "\" does not exist!")
 			printd("The client is yielding for the class \"" .. Index .. "\".")
-
-			self.Classes._WaitCache[coroutine.status()] = Index
+			
+			self.Classes._WaitCache[coroutine.running()] = Index
 			return coroutine.yield()
 		end
 	end
@@ -94,7 +94,7 @@ end
 do Module.Libraries = setmetatable({}, CollectionMetatable)
 	Module.Libraries._Folder = Retrieve("Libraries", "Folder", ReplicatedStorage)
 	Module.Libraries._WaitCache = {}
-
+	
 	BindToTag("oLibrary", function(Object)
 		Module.Libraries[Object.Name] = Object
 		
@@ -102,14 +102,14 @@ do Module.Libraries = setmetatable({}, CollectionMetatable)
 			Object.Parent = Module.Libraries._Folder
 		end
 	end)
-
+	
 	function Module:LoadLibrary(Index)
 		if self.Libraries[Index] then
 			return require(self.Libraries[Index])
 		else
 			assert(IsClient, "The library \"" .. Index .. "\" does not exist!")
 			printd("The client is yielding for the library \"" .. Index .. "\".")
-
+			
 			self.Libraries._WaitCache[coroutine.running()] = Index
 			return coroutine.yield()
 		end
@@ -139,30 +139,15 @@ for SetName, SetClass in next, RetrievalSets do
 	end
 end
 
-do
+if not IsClient then
 	BindToTag("StarterCharacterScripts", function(Object)
-		if IsClient then
-			local Player = PlayerService.LocalPlayer
-			local Character = Player.Character
-			
-			if not Character then return end
-			if Character:FindFirstChild(Object.Name) then return end
-			
-			Object:Clone().Parent = Character
-		else
-			Object.Parent = StarterPlayer.StarterCharacterScripts
-		end
+		Object.Parent = StarterPlayer.StarterCharacterScripts
+		CollectionService:RemoveTag(Object, "StarterCharacterScripts")
 	end)
 	
 	BindToTag("StarterPlayerScripts", function(Object)
-		if IsClient then
-			local Player = PlayerService.LocalPlayer
-			if Player:FindFirstChild(Object.Name, true) then return end
-			
-			Object:Clone().Parent = Player
-		else
-			Object.Parent = StarterPlayer.StarterPlayerScripts
-		end
+		Object.Parent = StarterPlayer.StarterPlayerScripts
+		CollectionService:RemoveTag(Object, "StarterPlayerScripts")
 	end)
 end
 
