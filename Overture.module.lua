@@ -18,7 +18,9 @@ local DebugPrint = false
 
 local RetrievalSets = {
 	["RemoteEvent"] = "RemoteEvent",
-	["RemoteFunction"] = "RemoteFunction"
+	["RemoteFunction"] = "RemoteFunction",
+	["BindableEvent"] = "BindableEvent",
+	["BindableFunction"] = "BindableFunction",
 }
 
 --// Functions
@@ -62,31 +64,6 @@ function CollectionMetatable:__newindex(Index, Value)
 	for Thread, ExpectedIndex in next, self._WaitCache do
 		if Index == ExpectedIndex then
 			coroutine.resume(Thread, require(Value))
-		end
-	end
-end
-
-do Module.Classes = setmetatable({}, CollectionMetatable)
-	Module.Classes._Folder = Retrieve("Classes", "Folder", ReplicatedStorage)
-	Module.Classes._WaitCache = {}
-	
-	BindToTag("oClass", function(Object)
-		Module.Classes[Object.Name] = Object
-		
-		if CollectionService:HasTag(Object, "ForceReplicate") then
-			Object.Parent = Module.Classes._Folder
-		end
-	end)
-	
-	function Module:LoadClass(Index)
-		if self.Classes[Index] then
-			return require(self.Classes[Index])
-		else
-			assert(IsClient, "The class \"" .. Index .. "\" does not exist!")
-			printd("The client is yielding for the class \"" .. Index .. "\".")
-			
-			self.Classes._WaitCache[coroutine.running()] = Index
-			return coroutine.yield()
 		end
 	end
 end
