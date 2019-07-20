@@ -101,7 +101,7 @@ for SetName, SetClass in next, RetrievalSets do
 	end
 	
 	Module["WaitFor" .. SetName] = function(self, ItemName)
-		return SetFolder:WaitForChild(ItemName)
+		return SetFolder:WaitForChild(ItemName, math.huge)
 	end
 	
 	Module["Get" .. SetName] = function(self, ItemName)
@@ -109,7 +109,7 @@ for SetName, SetClass in next, RetrievalSets do
 		if Item then return Item end
 		
 		if IsClient then
-			return self["WaitFor" .. SetName](self, ItemName)
+			return SetFolder:WaitForChild(ItemName)
 		else
 			return self["GetLocal" .. SetName](self, ItemName)
 		end
