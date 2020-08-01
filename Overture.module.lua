@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local IsClient = RunService:IsClient()
+local IsServer = RunService:IsServer()
 
 local Module = {}
 local CollectionMetatable = {}
@@ -61,9 +62,10 @@ function CollectionMetatable:__newindex(Index, Value)
 	rawset(self, Index, Value)
 	if Index:sub(1, 1) == "_" then return end
 	
-	for Thread, ExpectedIndex in next, self._WaitCache do
+	for BindableEvent, ExpectedIndex in next, self._WaitCache do
 		if Index == ExpectedIndex then
-			coroutine.resume(Thread, require(Value))
+			BindableEvent:Fire(Value)
+			BindableEvent:Destroy()
 		end
 	end
 end
@@ -87,8 +89,25 @@ do Module.Libraries = setmetatable({}, CollectionMetatable)
 			assert(IsClient, "The library \"" .. Index .. "\" does not exist!")
 			printd("The client is yielding for the library \"" .. Index .. "\".")
 			
-			self.Libraries._WaitCache[coroutine.running()] = Index
-			return coroutine.yield()
+			--/ Coroutine yielding has been temporarily replaced with BindableEvents due to Roblox issues.
+			
+			local BindableEvent = Instance.new("BindableEvent")
+			BindableEvent.Parent = script
+			
+			self.Libraries._WaitCache[BindableEvent] = Index
+			return require(BindableEvent.Event:Wait())
+		end
+	end
+	
+	function Module:LoadLibraryOnClient(...)
+		if IsClient then
+			return self:LoadLibrary(...)
+		end
+	end
+	
+	function Module:LoadLibraryOnServer(...)
+		if IsServer then
+			return self:LoadLibrary(...)
 		end
 	end
 end
