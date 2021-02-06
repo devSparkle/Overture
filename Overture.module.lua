@@ -64,8 +64,10 @@ function CollectionMetatable:__newindex(Index, Value)
 	
 	for BindableEvent, ExpectedIndex in next, self._WaitCache do
 		if Index == ExpectedIndex then
-			BindableEvent:Fire(Value)
-			BindableEvent:Destroy()
+			spawn(function()
+				BindableEvent:Fire(Value)
+				BindableEvent:Destroy()
+			end)
 		end
 	end
 end
