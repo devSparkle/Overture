@@ -6,10 +6,6 @@ local PlayerService = game:GetService("Players")
 local StarterPlayer = game:GetService("StarterPlayer")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
-
-local OvertureYield = script:WaitForChild("OvertureYield")
-local oStarterPlayerScripts = script:WaitForChild("StarterPlayerScripts"):: Folder
-local oStarterCharacterScripts = script:WaitForChild("StarterCharacterScripts"):: Folder
 local StarterCharacterScripts = StarterPlayer:WaitForChild("StarterCharacterScripts"):: Folder
 
 local Module = {}
@@ -17,15 +13,6 @@ local LibraryThreadCache: {[thread]: string} = {}
 local Libraries: {[string]: ModuleScript} = {}
 
 --// Functions
-
-local function Reparent(Child, NewParent)
-	if Child:IsA("LocalScript") and not Child.Disabled then
-		Child:SetAttribute("EnableOnceReady", true)
-		Child.Disabled = true
-	end
-
-	Child.Parent = NewParent
-end
 
 local function Retrieve(InstanceName: string, InstanceClass: string, InstanceParent: Instance, ForceWait: boolean?): Instance
 	if ForceWait then
@@ -55,121 +42,6 @@ end
 
 function Module._BindToTag(Tag: string, Function: (Instance) -> ())
 	return Module._BindFunction(Function, CollectionService:GetInstanceAddedSignal(Tag), CollectionService:GetTagged(Tag))
-end
-
-function Module._CountLibrariesIn(Parent: Instance, CountLocally: boolean?): number
-	local StoredCount = Parent:GetAttribute("LibrariesIn")
-
-	if StoredCount then
-		return StoredCount
-	end
-
-	if RunService:IsClient() and not CountLocally then
-		return OvertureYield:InvokeServer(Parent)
-	else
-		local Count = 0
-
-		for _, Descendant in next, Parent:GetDescendants() do
-			if Descendant:IsA("ModuleScript") then
-				Count += 1
-			end
-		end
-
-		if RunService:IsServer() then
-			Parent:SetAttribute("LibrariesIn", Count)
-		end
-
-		return Count
-	end
-end
-
-function Module:_LoadServer()
-	if script:GetAttribute("ServerLoaded") then
-		return warn("Attempted to load Overture multiple times.")
-	else
-		script:SetAttribute("ServerLoaded", true)
-	end
-
-	function OvertureYield.OnServerInvoke(_, Parent: Instance)
-		return Module._CountLibrariesIn(Parent)
-	end
-
-	self._BindToTag("oHandled", function(LuaSourceContainer: LuaSourceContainer)
-		local RunsOn = LuaSourceContainer:GetAttribute("RunsOn") or "Empty"
-
-		if LuaSourceContainer:IsA("LocalScript") then
-			if RunsOn == "Player" then
-				task.defer(Reparent, LuaSourceContainer, oStarterPlayerScripts)
-			elseif RunsOn == "Character" then
-				task.defer(Reparent, LuaSourceContainer, oStarterCharacterScripts)
-			else
-				warn(string.format([[Unknown RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
-			end
-		elseif LuaSourceContainer:IsA("Script") then
-			if RunsOn == "Player" then
-				warn(string.format([[Invalid RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
-			elseif RunsOn == "Character" then
-				task.defer(Reparent, LuaSourceContainer, StarterCharacterScripts)
-
-				for _, Player in next, PlayerService:GetPlayers() do
-					if Player.Character then
-						LuaSourceContainer:Clone().Parent = Player.Character
-					end
-				end
-			else
-				warn(string.format([[Unknown RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
-			end
-		elseif LuaSourceContainer:IsA("ModuleScript") then
-			warn(string.format([[Invalid tag "oHandled" applied to %s]], LuaSourceContainer:GetFullName()))
-		end
-	end)
-
-	self._BindToTag("oLibrary", function(LuaSourceContainer: LuaSourceContainer)
-		if LuaSourceContainer:GetAttribute("ForceReplicate") then
-			LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
-		end
-	end)
-
-	self._BindToTag("ForceReplicate", function(LuaSourceContainer: LuaSourceContainer)
-		LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
-	end)
-
-	self._BindToTag("StarterPlayerScripts", function(LuaSourceContainer: LuaSourceContainer)
-		if LuaSourceContainer:IsA("LocalScript") then
-			task.defer(Reparent, LuaSourceContainer, oStarterPlayerScripts)
-		else
-			warn(string.format([[Invalid tag "StarterPlayerScripts" applied to %s]], LuaSourceContainer:GetFullName()))
-		end
-	end)
-
-	self._BindToTag("StarterCharacterScripts", function(LuaSourceContainer: LuaSourceContainer)
-		if LuaSourceContainer:IsA("LocalScript") then
-			task.defer(Reparent, LuaSourceContainer, oStarterCharacterScripts)
-		elseif LuaSourceContainer:IsA("Script") then
-			task.defer(Reparent, LuaSourceContainer, StarterCharacterScripts)
-
-			for _, Player in next, PlayerService:GetPlayers() do
-				if Player.Character then
-					LuaSourceContainer:Clone().Parent = Player.Character
-				end
-			end
-		else
-			warn(string.format([[Invalid tag "StarterCharacterScripts" applied to %s]], LuaSourceContainer:GetFullName()))
-		end
-	end)
-end
-
-function Module:YieldForLibrariesIn(Parent: Instance)
-	local ServerCount = OvertureYield:InvokeServer(Parent)
-	local ClientCount do
-		repeat
-			if ClientCount ~= nil then
-				Parent.DescendantAdded:Wait()
-			end
-
-			ClientCount = self._CountLibrariesIn(Parent, true)
-		until ClientCount >= ServerCount
-	end
 end
 
 function Module:LoadLibrary(Index: string)
@@ -227,6 +99,135 @@ Module._BindToTag("oLibrary", function(Object)
 	end
 end)
 
+local function Initialize()
+	if RunService:IsServer() then
+		if script:GetAttribute("ServerHandled") then
+			return
+		end
+
+		script:SetAttribute("ServerHandled", true)
+
+		local oStarterPlayerScripts = Retrieve("StarterPlayerScripts", "Folder", script)
+		local oStarterCharacterScripts = Retrieve("StarterCharacterScripts", "Folder", script)
+		local function Reparent(Child, NewParent)
+			if Child:IsA("LocalScript") and not Child.Disabled then
+				Child:SetAttribute("EnableOnceReady", true)
+				Child.Disabled = true
+			end
+
+			Child.Parent = Retrieve(NewParent, "Folder", script)
+		end
+
+		Module._BindToTag("oHandled", function(LuaSourceContainer: Instance)
+			local RunsOn = LuaSourceContainer:GetAttribute("RunsOn") or "Empty"
+
+			if LuaSourceContainer:IsA("LocalScript") then
+				if RunsOn == "Player" then
+					task.defer(Reparent, LuaSourceContainer, "StarterPlayerScripts")
+				elseif RunsOn == "Character" then
+					task.defer(Reparent, LuaSourceContainer, "StarterCharacterScripts")
+				else
+					warn(string.format([[Unknown RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
+				end
+			elseif LuaSourceContainer:IsA("Script") then
+				if RunsOn == "Player" then
+					warn(string.format([[Invalid RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
+				elseif RunsOn == "Character" then
+					LuaSourceContainer.Parent = StarterCharacterScripts
+
+					for _, Player in next, PlayerService:GetPlayers() do
+						if Player.Character then
+							LuaSourceContainer:Clone().Parent = Player.Character
+						end
+					end
+				else
+					warn(string.format([[Unknown RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
+				end
+			elseif LuaSourceContainer:IsA("ModuleScript") then
+				warn(string.format([[Invalid tag "oHandled" applied to %s]], LuaSourceContainer:GetFullName()))
+			end
+		end)
+
+		Module._BindToTag("oLibrary", function(LuaSourceContainer: Instance)
+			if LuaSourceContainer:GetAttribute("ForceReplicate") then
+				LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
+			end
+		end)
+
+		Module._BindToTag("ForceReplicate", function(LuaSourceContainer: Instance)
+			LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
+		end)
+
+		Module._BindToTag("StarterPlayerScripts", function(LuaSourceContainer: Instance)
+			if LuaSourceContainer:IsA("LocalScript") then
+				task.defer(Reparent, LuaSourceContainer, "StarterPlayerScripts")
+			else
+				warn(string.format([[Invalid tag "StarterPlayerScripts" applied to %s]], LuaSourceContainer:GetFullName()))
+			end
+		end)
+
+		Module._BindToTag("StarterCharacterScripts", function(LuaSourceContainer: Instance)
+			if LuaSourceContainer:IsA("LocalScript") then
+				task.defer(Reparent, LuaSourceContainer, "StarterCharacterScripts")
+			elseif LuaSourceContainer:IsA("Script") then
+				LuaSourceContainer.Parent = StarterCharacterScripts
+
+				for _, Player in next, PlayerService:GetPlayers() do
+					if Player.Character then
+						LuaSourceContainer:Clone().Parent = Player.Character
+					end
+				end
+			else
+				warn(string.format([[Invalid tag "StarterCharacterScripts" applied to %s]], LuaSourceContainer:GetFullName()))
+			end
+		end)
+	elseif RunService:IsClient() then
+		if script:GetAttribute("ClientHandled") then
+			return
+		end
+
+		script:SetAttribute("ClientHandled", true)
+
+		local Player = PlayerService.LocalPlayer
+		local PlayerScripts = Player:WaitForChild("PlayerScripts")
+		local oStarterPlayerScripts = script:WaitForChild("StarterPlayerScripts")
+		local oStarterCharacterScripts = script:WaitForChild("StarterCharacterScripts")
+		local function Reparent(Child, NewParent)
+			Child.Parent = NewParent
+
+			if Child:IsA("LocalScript") and Child:GetAttribute("EnableOnceReady") then
+				Child.Disabled = false
+			end
+		end
+
+		if script:FindFirstAncestorWhichIsA("PlayerGui") then
+			task.defer(Reparent, script:Clone(), PlayerScripts)
+			task.wait()
+
+			script.Disabled = true
+			script:Destroy()
+
+			return
+		end
+
+		Module._BindFunction(function(Child: Instance)
+			task.defer(Reparent, Child, PlayerScripts)
+		end, oStarterPlayerScripts.ChildAdded, oStarterPlayerScripts:GetChildren())
+
+		Module._BindFunction(function(Child: Instance)
+			if Player.Character then
+				task.defer(Reparent, Child:Clone(), Player.Character)
+			end
+		end, oStarterCharacterScripts.ChildAdded, oStarterCharacterScripts:GetChildren())
+
+		Module._BindFunction(function(Character: Instance)
+			for _, Child in next, oStarterCharacterScripts:GetChildren() do
+				task.spawn(Reparent, Child:Clone(), Character)
+			end
+		end, Player.CharacterAdded, {Player.Character})
+	end
+end
+
 do --/ LEGACY SUPPORT
 	for _, SetClass in next, {"RemoteEvent", "RemoteFunction", "BindableEvent", "BindableFunction"} do
 		local SetFolder = Retrieve(SetClass, "Folder", ReplicatedStorage)
@@ -251,5 +252,9 @@ do --/ LEGACY SUPPORT
 		end
 	end
 end
+
+--// Triggers
+
+task.spawn(Initialize)
 
 return Module
