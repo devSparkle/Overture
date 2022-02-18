@@ -1,152 +1,229 @@
+--!nonstrict
 --// Initialization
 
 local RunService = game:GetService("RunService")
 local PlayerService = game:GetService("Players")
 local StarterPlayer = game:GetService("StarterPlayer")
 local CollectionService = game:GetService("CollectionService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local IsClient = RunService:IsClient()
-local IsServer = RunService:IsServer()
+local OvertureYield = script:WaitForChild("OvertureYield")
+local oStarterPlayerScripts = script:WaitForChild("StarterPlayerScripts"):: Folder
+local oStarterCharacterScripts = script:WaitForChild("StarterCharacterScripts"):: Folder
+local StarterCharacterScripts = StarterPlayer:WaitForChild("StarterCharacterScripts"):: Folder
 
 local Module = {}
-local CollectionMetatable = {}
-
---// Variables
-
-local DebugPrint = false
-
-local RetrievalSets = {
-	["RemoteEvent"] = "RemoteEvent",
-	["RemoteFunction"] = "RemoteFunction",
-	["BindableEvent"] = "BindableEvent",
-	["BindableFunction"] = "BindableFunction",
-}
+local LibraryThreadCache: {[thread]: string} = {}
+local Libraries: {[string]: ModuleScript} = {}
 
 --// Functions
 
-local function printd(...)
-	if DebugPrint then
-		return print(...)
+local function Reparent(Child, NewParent)
+	if Child:IsA("LocalScript") and not Child.Disabled then
+		Child:SetAttribute("EnableOnceReady", true)
+		Child.Disabled = true
 	end
+
+	Child.Parent = NewParent
 end
 
-local function Retrieve(InstanceName, InstanceClass, InstanceParent)
-	--/ Finds an Instance by name and creates a new one if it doesen't exist
-	
-	local SearchInstance = nil
-	local InstanceCreated = false
-	
-	if InstanceParent:FindFirstChild(InstanceName) then
-		SearchInstance = InstanceParent[InstanceName]
-	else
-		InstanceCreated = true
+local function Retrieve(InstanceName: string, InstanceClass: string, InstanceParent: Instance, ForceWait: boolean?): Instance
+	if ForceWait then
+		return InstanceParent:WaitForChild(InstanceName)
+	end
+
+	local SearchInstance = InstanceParent:FindFirstChild(InstanceName)
+
+	if not SearchInstance then
 		SearchInstance = Instance.new(InstanceClass)
 		SearchInstance.Name = InstanceName
 		SearchInstance.Parent = InstanceParent
 	end
-	
-	return SearchInstance, InstanceCreated
+
+	return SearchInstance
 end
 
-local function BindToTag(Tag, Callback)
-	CollectionService:GetInstanceAddedSignal(Tag):Connect(Callback)
-	
-	for _, TaggedItem in next, CollectionService:GetTagged(Tag) do
-		Callback(TaggedItem)
-	end
-end
-
-function CollectionMetatable:__newindex(Index, Value)
-	rawset(self, Index, Value)
-	if Index:sub(1, 1) == "_" then return end
-	
-	for BindableEvent, ExpectedIndex in next, self._WaitCache do
-		if Index == ExpectedIndex then
-			spawn(function()
-				BindableEvent:Fire(Value)
-				BindableEvent:Destroy()
-			end)
+function Module._BindFunction(Function: (Instance) -> (), Event: RBXScriptSignal, Existing: {Instance}): RBXScriptConnection
+	if Existing then
+		for _, Value in next, Existing do
+			task.spawn(Function, Value)
 		end
 	end
+
+	return Event:Connect(Function)
 end
 
-do Module.Libraries = setmetatable({}, CollectionMetatable)
-	Module.Libraries._Folder = Retrieve("Libraries", "Folder", ReplicatedStorage)
-	Module.Libraries._WaitCache = {}
-	
-	BindToTag("oLibrary", function(Object)
-		Module.Libraries[Object.Name] = Object
-		
-		if CollectionService:HasTag(Object, "ForceReplicate") then
-			Object.Parent = Module.Libraries._Folder
+function Module._BindToTag(Tag: string, Function: (Instance) -> ())
+	return Module._BindFunction(Function, CollectionService:GetInstanceAddedSignal(Tag), CollectionService:GetTagged(Tag))
+end
+
+function Module._CountLibrariesIn(Parent: Instance, CountLocally: boolean?): number
+	local StoredCount = Parent:GetAttribute("LibrariesIn")
+
+	if StoredCount then
+		return StoredCount
+	end
+
+	if RunService:IsClient() and not CountLocally then
+		return OvertureYield:InvokeServer(Parent)
+	else
+		local Count = 0
+
+		for _, Descendant in next, Parent:GetDescendants() do
+			if Descendant:IsA("ModuleScript") then
+				Count += 1
+			end
+		end
+
+		if RunService:IsServer() then
+			Parent:SetAttribute("LibrariesIn", Count)
+		end
+
+		return Count
+	end
+end
+
+function Module:_LoadServer()
+	if script:GetAttribute("ServerLoaded") then
+		return warn("Attempted to load Overture multiple times.")
+	else
+		script:SetAttribute("ServerLoaded", true)
+	end
+
+	function OvertureYield.OnServerInvoke(_, Parent: Instance)
+		return Module._CountLibrariesIn(Parent)
+	end
+
+	self._BindToTag("oHandled", function(LuaSourceContainer: LuaSourceContainer)
+		local RunsOn = LuaSourceContainer:GetAttribute("RunsOn") or "Empty"
+
+		if LuaSourceContainer:IsA("LocalScript") then
+			if RunsOn == "Player" then
+				task.defer(Reparent, LuaSourceContainer, oStarterPlayerScripts)
+			elseif RunsOn == "Character" then
+				task.defer(Reparent, LuaSourceContainer, oStarterCharacterScripts)
+			else
+				warn(string.format([[Unknown RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
+			end
+		elseif LuaSourceContainer:IsA("Script") then
+			if RunsOn == "Player" then
+				warn(string.format([[Invalid RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
+			elseif RunsOn == "Character" then
+				task.defer(Reparent, LuaSourceContainer, StarterCharacterScripts)
+
+				for _, Player in next, PlayerService:GetPlayers() do
+					if Player.Character then
+						LuaSourceContainer:Clone().Parent = Player.Character
+					end
+				end
+			else
+				warn(string.format([[Unknown RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
+			end
+		elseif LuaSourceContainer:IsA("ModuleScript") then
+			warn(string.format([[Invalid tag "oHandled" applied to %s]], LuaSourceContainer:GetFullName()))
 		end
 	end)
-	
-	function Module:LoadLibrary(Index)
-		if self.Libraries[Index] then
-			return require(self.Libraries[Index])
+
+	self._BindToTag("oLibrary", function(LuaSourceContainer: LuaSourceContainer)
+		if LuaSourceContainer:GetAttribute("ForceReplicate") then
+			LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
+		end
+	end)
+
+	self._BindToTag("ForceReplicate", function(LuaSourceContainer: LuaSourceContainer)
+		LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
+	end)
+
+	self._BindToTag("StarterPlayerScripts", function(LuaSourceContainer: LuaSourceContainer)
+		if LuaSourceContainer:IsA("LocalScript") then
+			task.defer(Reparent, LuaSourceContainer, oStarterPlayerScripts)
 		else
-			assert(IsClient, "The library \"" .. Index .. "\" does not exist!")
-			printd("The client is yielding for the library \"" .. Index .. "\".")
-			
-			--/ Coroutine yielding has been temporarily replaced with BindableEvents due to Roblox issues.
-			
-			local BindableEvent = Instance.new("BindableEvent")
-			BindableEvent.Parent = script
-			
-			self.Libraries._WaitCache[BindableEvent] = Index
-			return require(BindableEvent.Event:Wait())
+			warn(string.format([[Invalid tag "StarterPlayerScripts" applied to %s]], LuaSourceContainer:GetFullName()))
 		end
-	end
-	
-	function Module:LoadLibraryOnClient(...)
-		if IsClient then
-			return self:LoadLibrary(...)
-		end
-	end
-	
-	function Module:LoadLibraryOnServer(...)
-		if IsServer then
-			return self:LoadLibrary(...)
-		end
-	end
-end
+	end)
 
-for SetName, SetClass in next, RetrievalSets do
-	local SetFolder = Retrieve(SetName, "Folder", ReplicatedStorage)
-	
-	Module["GetLocal" .. SetName] = function(self, ItemName)
-		return Retrieve(ItemName, SetClass, SetFolder)
-	end
-	
-	Module["WaitFor" .. SetName] = function(self, ItemName)
-		return SetFolder:WaitForChild(ItemName, math.huge)
-	end
-	
-	Module["Get" .. SetName] = function(self, ItemName)
-		local Item = SetFolder:FindFirstChild(ItemName)
-		if Item then return Item end
-		
-		if IsClient then
-			return SetFolder:WaitForChild(ItemName)
+	self._BindToTag("StarterCharacterScripts", function(LuaSourceContainer: LuaSourceContainer)
+		if LuaSourceContainer:IsA("LocalScript") then
+			task.defer(Reparent, LuaSourceContainer, oStarterCharacterScripts)
+		elseif LuaSourceContainer:IsA("Script") then
+			task.defer(Reparent, LuaSourceContainer, StarterCharacterScripts)
+
+			for _, Player in next, PlayerService:GetPlayers() do
+				if Player.Character then
+					LuaSourceContainer:Clone().Parent = Player.Character
+				end
+			end
 		else
-			return self["GetLocal" .. SetName](self, ItemName)
+			warn(string.format([[Invalid tag "StarterCharacterScripts" applied to %s]], LuaSourceContainer:GetFullName()))
 		end
+	end)
+end
+
+function Module:YieldForLibrariesIn(Parent: Instance)
+	local ServerCount = OvertureYield:InvokeServer(Parent)
+	local ClientCount do
+		repeat
+			if ClientCount ~= nil then
+				Parent.DescendantAdded:Wait()
+			end
+
+			ClientCount = self._CountLibrariesIn(Parent, true)
+		until ClientCount >= ServerCount
 	end
 end
 
-if not IsClient then
-	BindToTag("StarterCharacterScripts", function(Object)
-		Object.Parent = StarterPlayer.StarterCharacterScripts
-		CollectionService:RemoveTag(Object, "StarterCharacterScripts")
-	end)
-	
-	BindToTag("StarterPlayerScripts", function(Object)
-		Object.Parent = StarterPlayer.StarterPlayerScripts
-		CollectionService:RemoveTag(Object, "StarterPlayerScripts")
-	end)
+function Module:LoadLibrary(Index: string)
+	if Libraries[Index] then
+		return require(Libraries[Index])
+	else
+		assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
+
+		LibraryThreadCache[coroutine.running()] = Index
+		return require(coroutine.yield())
+	end
 end
+
+function Module:LoadLibraryOnClient(...)
+	if RunService:IsClient() then
+		return self:LoadLibrary(...)
+	end
+end
+
+function Module:LoadLibraryOnServer(...)
+	if RunService:IsServer() then
+		return self:LoadLibrary(...)
+	end
+end
+
+function Module:GetLocal(InstanceClass: string, InstanceName: string): Instance
+	return Retrieve(InstanceName, InstanceClass, (Retrieve("Local" .. InstanceClass, "Folder", script)))
+end
+
+function Module:WaitFor(InstanceClass: string, InstanceName: string): Instance
+	return Retrieve(InstanceClass, "Folder", script, RunService:IsClient()):WaitForChild(InstanceName, math.huge)
+end
+
+function Module:Get(InstanceClass: string, InstanceName: string): Instance
+	local SetFolder = Retrieve(InstanceClass, "Folder", script, RunService:IsClient())
+	local Item = SetFolder:FindFirstChild(InstanceName)
+
+	if Item then
+		return Item
+	elseif RunService:IsClient() then
+		return SetFolder:WaitForChild(InstanceName)
+	else
+		return Retrieve(InstanceName, InstanceClass, SetFolder)
+	end
+end
+
+Module._BindToTag("oLibrary", function(Object)
+	Libraries[Object.Name] = Object
+
+	for Thread, WantedName in next, LibraryThreadCache do
+		if Object.Name == WantedName then
+			LibraryThreadCache[Thread] = nil
+			task.spawn(Thread, Object)
+		end
+	end
+end)
 
 return Module
