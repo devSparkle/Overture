@@ -255,6 +255,6 @@ end
 
 --// Triggers
 
-task.spawn(Initialize)
+task.defer(Initialize)
 
 return Module
