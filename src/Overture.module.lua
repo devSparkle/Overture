@@ -18,15 +18,15 @@ local function Retrieve(InstanceName: string, InstanceClass: string, InstancePar
 	if ForceWait then
 		return InstanceParent:WaitForChild(InstanceName)
 	end
-
+	
 	local SearchInstance = InstanceParent:FindFirstChild(InstanceName)
-
+	
 	if not SearchInstance then
 		SearchInstance = Instance.new(InstanceClass)
 		SearchInstance.Name = InstanceName
 		SearchInstance.Parent = InstanceParent
 	end
-
+	
 	return SearchInstance
 end
 
@@ -36,7 +36,7 @@ function Module._BindFunction(Function: (Instance) -> (), Event: RBXScriptSignal
 			task.spawn(Function, Value)
 		end
 	end
-
+	
 	return Event:Connect(Function)
 end
 
@@ -49,7 +49,7 @@ function Module:LoadLibrary(Index: string)
 		return require(Libraries[Index])
 	else
 		assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
-
+		
 		LibraryThreadCache[coroutine.running()] = Index
 		return require(coroutine.yield())
 	end
@@ -78,7 +78,7 @@ end
 function Module:Get(InstanceClass: string, InstanceName: string): Instance
 	local SetFolder = Retrieve(InstanceClass, "Folder", script, RunService:IsClient())
 	local Item = SetFolder:FindFirstChild(InstanceName)
-
+	
 	if Item then
 		return Item
 	elseif RunService:IsClient() then
@@ -90,7 +90,7 @@ end
 
 Module._BindToTag("oLibrary", function(Object)
 	Libraries[Object.Name] = Object
-
+	
 	for Thread, WantedName in next, LibraryThreadCache do
 		if Object.Name == WantedName then
 			LibraryThreadCache[Thread] = nil
@@ -104,9 +104,9 @@ local function Initialize()
 		if script:GetAttribute("ServerHandled") then
 			return
 		end
-
+		
 		script:SetAttribute("ServerHandled", true)
-
+		
 		local oStarterPlayerScripts = Retrieve("StarterPlayerScripts", "Folder", script)
 		local oStarterCharacterScripts = Retrieve("StarterCharacterScripts", "Folder", script)
 		local function Reparent(Child, NewParent)
@@ -114,13 +114,13 @@ local function Initialize()
 				Child:SetAttribute("EnableOnceReady", true)
 				Child.Disabled = true
 			end
-
+			
 			Child.Parent = Retrieve(NewParent, "Folder", script)
 		end
-
+		
 		Module._BindToTag("oHandled", function(LuaSourceContainer: Instance)
 			local RunsOn = LuaSourceContainer:GetAttribute("RunsOn") or "Empty"
-
+			
 			if LuaSourceContainer:IsA("LocalScript") then
 				if RunsOn == "Player" then
 					task.defer(Reparent, LuaSourceContainer, "StarterPlayerScripts")
@@ -134,7 +134,7 @@ local function Initialize()
 					warn(string.format([[Invalid RunsOn type "%s" on %s]], RunsOn, LuaSourceContainer:GetFullName()))
 				elseif RunsOn == "Character" then
 					LuaSourceContainer.Parent = StarterCharacterScripts
-
+					
 					for _, Player in next, PlayerService:GetPlayers() do
 						if Player.Character then
 							LuaSourceContainer:Clone().Parent = Player.Character
@@ -147,17 +147,17 @@ local function Initialize()
 				warn(string.format([[Invalid tag "oHandled" applied to %s]], LuaSourceContainer:GetFullName()))
 			end
 		end)
-
+		
 		Module._BindToTag("oLibrary", function(LuaSourceContainer: Instance)
 			if LuaSourceContainer:GetAttribute("ForceReplicate") then
 				LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
 			end
 		end)
-
+		
 		Module._BindToTag("ForceReplicate", function(LuaSourceContainer: Instance)
 			LuaSourceContainer.Parent = Retrieve("Libraries", "Folder", script)
 		end)
-
+		
 		Module._BindToTag("StarterPlayerScripts", function(LuaSourceContainer: Instance)
 			if LuaSourceContainer:IsA("LocalScript") then
 				task.defer(Reparent, LuaSourceContainer, "StarterPlayerScripts")
@@ -165,13 +165,13 @@ local function Initialize()
 				warn(string.format([[Invalid tag "StarterPlayerScripts" applied to %s]], LuaSourceContainer:GetFullName()))
 			end
 		end)
-
+		
 		Module._BindToTag("StarterCharacterScripts", function(LuaSourceContainer: Instance)
 			if LuaSourceContainer:IsA("LocalScript") then
 				task.defer(Reparent, LuaSourceContainer, "StarterCharacterScripts")
 			elseif LuaSourceContainer:IsA("Script") then
 				LuaSourceContainer.Parent = StarterCharacterScripts
-
+				
 				for _, Player in next, PlayerService:GetPlayers() do
 					if Player.Character then
 						LuaSourceContainer:Clone().Parent = Player.Character
@@ -185,41 +185,41 @@ local function Initialize()
 		if script:GetAttribute("ClientHandled") then
 			return
 		end
-
+		
 		script:SetAttribute("ClientHandled", true)
-
+		
 		local Player = PlayerService.LocalPlayer
 		local PlayerScripts = Player:WaitForChild("PlayerScripts")
 		local oStarterPlayerScripts = script:WaitForChild("StarterPlayerScripts")
 		local oStarterCharacterScripts = script:WaitForChild("StarterCharacterScripts")
 		local function Reparent(Child, NewParent)
 			Child.Parent = NewParent
-
+			
 			if Child:IsA("LocalScript") and Child:GetAttribute("EnableOnceReady") then
 				Child.Disabled = false
 			end
 		end
-
+		
 		if script:FindFirstAncestorWhichIsA("PlayerGui") then
 			task.defer(Reparent, script:Clone(), PlayerScripts)
 			task.wait()
-
+			
 			script.Disabled = true
 			script:Destroy()
-
+			
 			return
 		end
-
+		
 		Module._BindFunction(function(Child: Instance)
 			task.defer(Reparent, Child, PlayerScripts)
 		end, oStarterPlayerScripts.ChildAdded, oStarterPlayerScripts:GetChildren())
-
+		
 		Module._BindFunction(function(Child: Instance)
 			if Player.Character then
 				task.defer(Reparent, Child:Clone(), Player.Character)
 			end
 		end, oStarterCharacterScripts.ChildAdded, oStarterCharacterScripts:GetChildren())
-
+		
 		Module._BindFunction(function(Character: Instance)
 			for _, Child in next, oStarterCharacterScripts:GetChildren() do
 				task.spawn(Reparent, Child:Clone(), Character)
@@ -231,19 +231,19 @@ end
 do --/ LEGACY SUPPORT
 	for _, SetClass in next, {"RemoteEvent", "RemoteFunction", "BindableEvent", "BindableFunction"} do
 		local SetFolder = Retrieve(SetClass, "Folder", ReplicatedStorage)
-
+		
 		Module["GetLocal" .. SetClass] = function(self, ItemName)
 			return Retrieve(ItemName, SetClass, SetFolder)
 		end
-
+		
 		Module["WaitFor" .. SetClass] = function(self, ItemName)
 			return SetFolder:WaitForChild(ItemName, math.huge)
 		end
-
+		
 		Module["Get" .. SetClass] = function(self, ItemName)
 			local Item = SetFolder:FindFirstChild(ItemName)
 			if Item then return Item end
-
+			
 			if RunService:IsClient() then
 				return SetFolder:WaitForChild(ItemName)
 			else
