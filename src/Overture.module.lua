@@ -93,8 +93,10 @@ Module._BindToTag("oLibrary", function(Object)
 	
 	for Thread, WantedName in next, LibraryThreadCache do
 		if Object.Name == WantedName then
-			LibraryThreadCache[Thread] = nil
-			task.spawn(Thread, Object)
+			task.defer(Thread, Object)
+			task.delay(1, function()
+				LibraryThreadCache[Thread] = nil
+			end)
 		end
 	end
 end)
