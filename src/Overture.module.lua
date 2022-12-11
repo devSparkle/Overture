@@ -27,7 +27,7 @@ local function Retrieve(InstanceName: string, InstanceClass: string, InstancePar
 end
 
 local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
-	for _, Value in next, Existing do
+	for _, Value in next, CollectionService:GetTagged(Tag) do
 		task.spawn(Function, Value)
 	end
 	
