@@ -9,7 +9,7 @@ local CollectionService = game:GetService("CollectionService")
 local StarterCharacterScripts = StarterPlayer:WaitForChild("StarterCharacterScripts"):: Folder
 
 local Module = {}
-local LibraryThreadCache: {[thread]: string} = {}
+local LibraryThreadCache = {}
 local Libraries: {[string]: ModuleScript} = {}
 
 --// Functions
@@ -50,7 +50,7 @@ function Module:LoadLibrary(Index: string)
 	else
 		assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
 		
-		LibraryThreadCache[coroutine.running()] = Index
+		table.insert(LibraryThreadCache, {Thread = coroutine.running(), RequestedIndex = Index, RequestedAt = time()})
 		return require(coroutine.yield())
 	end
 end
@@ -91,12 +91,26 @@ end
 Module._BindToTag("oLibrary", function(Object)
 	Libraries[Object.Name] = Object
 	
-	for Thread, WantedName in next, LibraryThreadCache do
-		if Object.Name == WantedName then
-			task.defer(Thread, Object)
+	for _, Cached in next, LibraryThreadCache do
+		if Object.Name == Cached.RequestedIndex then
+			task.defer(Cached.Thread, Object)
 			task.delay(1, function()
-				LibraryThreadCache[Thread] = nil
+				table.remove(LibraryThreadCache, table.find(LibraryThreadCache, Cached))
 			end)
+		end
+	end
+end)
+
+task.spawn(function()
+	while script:GetAttribute("Debug") do
+		task.wait(1)
+		
+		for _, Cached in next, LibraryThreadCache do
+			if Cached.WarningEmitted then continue end
+			if (time() - Cached.RequestedAt) > 5 then
+				warn(string.format([[Infinite yield possible on Overture:LoadLibrary("%s").]], Cached.RequestedIndex))
+				Cached.WarningEmitted = true
+			end
 		end
 	end
 end)
