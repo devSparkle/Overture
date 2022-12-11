@@ -244,31 +244,6 @@ local function Initialize()
 	end
 end
 
-do --/ LEGACY SUPPORT
-	for _, SetClass in next, {"RemoteEvent", "RemoteFunction", "BindableEvent", "BindableFunction"} do
-		local SetFolder = Retrieve(SetClass, "Folder", ReplicatedStorage)
-		
-		Module["GetLocal" .. SetClass] = function(self, ItemName): typeof(Instance.new(SetClass))
-			return Retrieve(ItemName, SetClass, SetFolder)
-		end
-		
-		Module["WaitFor" .. SetClass] = function(self, ItemName): typeof(Instance.new(SetClass))
-			return SetFolder:WaitForChild(ItemName, math.huge)
-		end
-		
-		Module["Get" .. SetClass] = function(self, ItemName): typeof(Instance.new(SetClass))
-			local Item = SetFolder:FindFirstChild(ItemName)
-			if Item then return Item end
-			
-			if RunService:IsClient() then
-				return SetFolder:WaitForChild(ItemName)
-			else
-				return self["GetLocal" .. SetClass](self, ItemName)
-			end
-		end
-	end
-end
-
 --// Triggers
 
 task.defer(Initialize)
