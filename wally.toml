@@ -1,5 +1,5 @@
 [package]
-name = "unnamedcorp/overture"
+name = "devsparkle/overture"
 description = "Source code management engine for Roblox"
 version = "2.0.0"
 license = "MIT"
