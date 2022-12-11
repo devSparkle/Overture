@@ -2,11 +2,7 @@
 --// Initialization
 
 local RunService = game:GetService("RunService")
-local PlayerService = game:GetService("Players")
-local StarterPlayer = game:GetService("StarterPlayer")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
-local StarterCharacterScripts = StarterPlayer:WaitForChild("StarterCharacterScripts"):: Folder
 
 local Module = {}
 local LibraryThreadCache = {}
