@@ -30,18 +30,12 @@ local function Retrieve(InstanceName: string, InstanceClass: string, InstancePar
 	return SearchInstance
 end
 
-function Module._BindFunction(Function: (Instance) -> (), Event: RBXScriptSignal, Existing: {Instance}): RBXScriptConnection
-	if Existing then
-		for _, Value in next, Existing do
-			task.spawn(Function, Value)
-		end
+local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
+	for _, Value in next, Existing do
+		task.spawn(Function, Value)
 	end
 	
-	return Event:Connect(Function)
-end
-
-function Module._BindToTag(Tag: string, Function: (Instance) -> ())
-	return Module._BindFunction(Function, CollectionService:GetInstanceAddedSignal(Tag), CollectionService:GetTagged(Tag))
+	return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
 end
 
 function Module:LoadLibrary(Index: string)
@@ -88,7 +82,7 @@ function Module:Get(InstanceClass: string, InstanceName: string): Instance
 	end
 end
 
-Module._BindToTag("oLibrary", function(Object)
+task.spawn(BindToTag, "oLibrary", function(Object)
 	Libraries[Object.Name] = Object
 	
 	for _, Cached in next, LibraryThreadCache do
