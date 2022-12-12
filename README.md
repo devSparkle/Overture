@@ -9,3 +9,13 @@
 Overture is a source management module for Roblox. Overture was created to decomplexify the loading of libraries, streamline OOP classes and bridge the server-client gap!
 
 For more information on usage, head over to the [repository wiki](https://github.com/devSparkle/Overture/wiki).
+
+
+## Getting Started
+Head over to the [releases tab](http://github.com/devSparkle/Overture/releases) and download the prepared `.rbxm` file. Insert this file into your game and drag the ModuleScript to `ReplicatedStorage`.
+
+Then, require it in your code like the example below:
+
+```lua
+local Overture = require(game:GetService("ReplicatedStorage"):WaitForChild("Oveture"))
+```
