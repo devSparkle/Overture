@@ -36,20 +36,20 @@ jobs:
       
       # Upload steps
       - name: Upload artifact
-        if: github.event_name == 'release'
-        uses: actions/upload-pages-artifact@v1
+        #if: github.event_name == 'release'
+        uses: actions/upload-pages-artifact@v2
         with:
           name: documentation
           path: build
   
   publish:
-    if: github.event_name == 'release'
+    #if: github.event_name == 'release'
     
     needs: build
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/download-artifact@v1
+      - uses: actions/download-artifact@v3
         with:
           name: documentation
           path: build
