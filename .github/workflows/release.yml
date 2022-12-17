@@ -1,0 +1,37 @@
+name: Build and Publish Binaries
+run-name: Release binaries for ${{ github.ref_name }} by @${{ github.actor }}
+
+on: release
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "release"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      # Build steps
+      - name: Add Foreman tools
+        run: |
+          echo "[tools]" >> foreman.toml
+          echo 'rojo = { source = "rojo-rbx/rojo", version = "7" }' >> foreman.toml
+      - name: Setup Foreman
+        uses: Roblox/setup-foreman@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build
+        run: rojo build -o Overture.rbxm
+      
+      # Upload steps
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Overture.rbxm
