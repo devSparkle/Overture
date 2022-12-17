@@ -29,6 +29,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
+          cache: 'npm'
+          cache-dependency-path: '**/.github/workflows/*.yml'
       - name: Build
         run: npx moonwave build
       
