@@ -39,6 +39,7 @@ jobs:
         if: github.event_name == 'release'
         uses: actions/upload-pages-artifact@v1
         with:
+          name: documentation
           path: build
   
   publish:
@@ -50,6 +51,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v1
         with:
+          name: documentation
           path: build
       
       # Upload steps
