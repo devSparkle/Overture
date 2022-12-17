@@ -4,6 +4,9 @@
 local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
+--[=[
+	@class Module
+]=]
 local Module = {}
 local LibraryThreadCache = {}
 local Libraries: {[string]: ModuleScript} = {}
@@ -34,6 +37,23 @@ local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConn
 	return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
 end
 
+--[=[
+	Finds a ModuleScript with the CollectionService `oLibrary` tag,
+	and returns the value that was returned by the given ModuleScript,
+	running it if it has not been run yet.
+	
+	:::caution
+	This method will yield when called on the client, but only if the library has not been replicated and indexed yet.
+	:::
+	
+	:::danger
+	If the library cannot be found when called on the server, this method will error.
+	:::
+	
+	@yields
+	@param Index -- The name of the ModuleScript
+	@return any?
+]=]
 function Module:LoadLibrary(Index: string)
 	if Libraries[Index] then
 		return require(Libraries[Index])
@@ -45,26 +65,81 @@ function Module:LoadLibrary(Index: string)
 	end
 end
 
+--[=[
+	See [Module:LoadLibrary] for the arguments to this method.
+	
+	Sugar for:
+	```lua
+		if RunService:IsClient() then
+			Overture:LoadLibrary(...)
+		end
+	```	
+	
+	@yields
+	@param ... any
+	@return any
+]=]
 function Module:LoadLibraryOnClient(...)
 	if RunService:IsClient() then
 		return self:LoadLibrary(...)
 	end
 end
 
+--[=[
+	See [Module:LoadLibrary] for the arguments to this method.
+	
+	Sugar for:
+	```lua
+		if RunService:IsServer() then
+			Overture:LoadLibrary(...)
+		end
+	```	
+	
+	@param ... any
+	@return any?
+]=]
 function Module:LoadLibraryOnServer(...)
 	if RunService:IsServer() then
 		return self:LoadLibrary(...)
 	end
 end
 
+--[=[
+	Returns an instance of the specified class.
+	If an instance of the same class and name already exists, it will be returned. Otherwise, a new one will be created.
+	
+	@param InstanceClass -- The class of the Instance
+	@param InstanceName -- The name of the Instance
+	@return InstanceClass
+]=]
 function Module:GetLocal(InstanceClass: string, InstanceName: string): Instance
 	return Retrieve(InstanceName, InstanceClass, (Retrieve("Local" .. InstanceClass, "Folder", script)))
 end
 
+--[=[
+	Returns an instance of the specified class.
+	If an instance of the same class and name already exists, it will be returned. Otherwise, the method will yield until one exists.
+	
+	@yields
+	@param InstanceClass -- The class of the Instance
+	@param InstanceName -- The name of the Instance
+	@return InstanceClass
+]=]
 function Module:WaitFor(InstanceClass: string, InstanceName: string): Instance
 	return Retrieve(InstanceClass, "Folder", script, RunService:IsClient()):WaitForChild(InstanceName, math.huge)
 end
 
+--[=[
+	Returns an instance of the specified class.
+	
+	If an instance of the same class and name already exists, it will be returned.
+	Otherwise, when called from the client, the method will yield until one exists; if called from the server, a new one will be created.
+	
+	@yields
+	@param InstanceClass -- The class of the Instance
+	@param InstanceName -- The name of the Instance
+	@return InstanceClass
+]=]
 function Module:Get(InstanceClass: string, InstanceName: string): Instance
 	local SetFolder = Retrieve(InstanceClass, "Folder", script, RunService:IsClient())
 	local Item = SetFolder:FindFirstChild(InstanceName)
