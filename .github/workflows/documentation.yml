@@ -1,7 +1,11 @@
-name: Publish Documentation
-run-name: Publish documentation for ${{ github.ref_name }} by @${{ github.actor }}
+name: Generate Documentation
+run-name: Generate documentation for ${{ github.ref_name }} by @${{ github.actor }}
 
-on: [release, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+  release:
+    types: [created]
 
 permissions:
   contents: read
@@ -13,13 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    needs: documentation-tests
-    
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
+  build:
     runs-on: ubuntu-latest
     
     steps:
@@ -33,7 +31,20 @@ jobs:
           node-version: 16.x
       - name: Build
         run: npx moonwave build
-        
+      
+      # Upload steps
+      - name: Upload artifact
+        if: github.event_name == 'release'
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: build
+  
+  publish:
+    if: github.event_name == 'release'
+    
+    runs-on: ubuntu-latest
+    
+    steps:
       # Upload steps
       - name: Setup Pages
         uses: actions/configure-pages@v1
@@ -43,4 +54,4 @@ jobs:
           path: build
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
