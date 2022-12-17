@@ -1,6 +1,6 @@
 {
-	"name": "overture",
+	"name": "Overture",
 	"tree": {
-		"$path": "src"
+		"$path": "src/Overture.module.lua"
 	}
 }
