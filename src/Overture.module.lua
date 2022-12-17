@@ -5,9 +5,9 @@ local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
 --[=[
-	@class Module
+	@class Overture
 ]=]
-local Module = {}
+local Overture = {}
 local LibraryThreadCache = {}
 local Libraries: {[string]: ModuleScript} = {}
 
@@ -54,7 +54,7 @@ end
 	@param Index -- The name of the ModuleScript
 	@return any?
 ]=]
-function Module:LoadLibrary(Index: string)
+function Overture:LoadLibrary(Index: string)
 	if Libraries[Index] then
 		return require(Libraries[Index])
 	else
@@ -66,7 +66,7 @@ function Module:LoadLibrary(Index: string)
 end
 
 --[=[
-	See [Module:LoadLibrary] for the arguments to this method.
+	See [Overture:LoadLibrary] for the arguments to this method.
 	
 	Sugar for:
 	```lua
@@ -79,14 +79,14 @@ end
 	@param ... any
 	@return any
 ]=]
-function Module:LoadLibraryOnClient(...)
+function Overture:LoadLibraryOnClient(...)
 	if RunService:IsClient() then
 		return self:LoadLibrary(...)
 	end
 end
 
 --[=[
-	See [Module:LoadLibrary] for the arguments to this method.
+	See [Overture:LoadLibrary] for the arguments to this method.
 	
 	Sugar for:
 	```lua
@@ -98,7 +98,7 @@ end
 	@param ... any
 	@return any?
 ]=]
-function Module:LoadLibraryOnServer(...)
+function Overture:LoadLibraryOnServer(...)
 	if RunService:IsServer() then
 		return self:LoadLibrary(...)
 	end
@@ -112,7 +112,7 @@ end
 	@param InstanceName -- The name of the Instance
 	@return InstanceClass
 ]=]
-function Module:GetLocal(InstanceClass: string, InstanceName: string): Instance
+function Overture:GetLocal(InstanceClass: string, InstanceName: string): Instance
 	return Retrieve(InstanceName, InstanceClass, (Retrieve("Local" .. InstanceClass, "Folder", script)))
 end
 
@@ -125,7 +125,7 @@ end
 	@param InstanceName -- The name of the Instance
 	@return InstanceClass
 ]=]
-function Module:WaitFor(InstanceClass: string, InstanceName: string): Instance
+function Overture:WaitFor(InstanceClass: string, InstanceName: string): Instance
 	return Retrieve(InstanceClass, "Folder", script, RunService:IsClient()):WaitForChild(InstanceName, math.huge)
 end
 
@@ -140,7 +140,7 @@ end
 	@param InstanceName -- The name of the Instance
 	@return InstanceClass
 ]=]
-function Module:Get(InstanceClass: string, InstanceName: string): Instance
+function Overture:Get(InstanceClass: string, InstanceName: string): Instance
 	local SetFolder = Retrieve(InstanceClass, "Folder", script, RunService:IsClient())
 	local Item = SetFolder:FindFirstChild(InstanceName)
 	
@@ -182,4 +182,4 @@ end)
 
 --// Triggers
 
-return Module
+return Overture
