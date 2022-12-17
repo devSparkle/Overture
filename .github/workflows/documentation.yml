@@ -36,7 +36,7 @@ jobs:
       
       # Upload steps
       - name: Upload artifact
-        #if: github.event_name == 'release'
+        if: github.event_name == 'release'
         uses: actions/upload-artifact@v3
         with:
           name: documentation
@@ -44,7 +44,7 @@ jobs:
           retention-days: 5
   
   publish:
-    #if: github.event_name == 'release'
+    if: github.event_name == 'release'
     
     needs: build
     runs-on: ubuntu-latest
