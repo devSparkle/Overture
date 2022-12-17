@@ -9,7 +9,7 @@ local CollectionService = game:GetService("CollectionService")
 	
 	The core of Overture revolves around the management of libraries.
 	
-	In Overture, a library is any ModuleScript which is tagged with the CollectionService oLibrary tag.
+	In Overture, a library is any ModuleScript which is tagged with the CollectionService `oLibrary` tag.
 	Overture itself will make no effort to replicate ModuleScripts, so remember to ensure that they are
 	accessible to both the server and the client; when this behavior is desired.
 	
@@ -81,12 +81,15 @@ end
 	the process of requiring a library once it is replicated.
 	
 	:::caution
-	This method will yield when called on the client, but only if the library has not been replicated and indexed yet.
+	This method will yield when called on the client, but only if the library has
+	not been replicated and indexed yet.
 	:::
 	
 	:::danger
 	If the library cannot be found when called on the server, this method will error.
 	:::
+	
+	@tag Library Management
 	
 	@yields
 	@param Index -- The name of the ModuleScript
@@ -114,6 +117,8 @@ end
 		end
 	```	
 	
+	@tag Library Management
+	
 	@yields
 	@client
 	@param ... any
@@ -136,6 +141,8 @@ end
 		end
 	```	
 	
+	@tag Library Management
+	
 	@server
 	@param ... any
 	@return any?
@@ -148,38 +155,11 @@ end
 
 --[=[
 	Returns an instance of the specified class.
-	If an instance of the same class and name already exists, it will be returned. Otherwise, a new one will be created.
-	
-	This function can be particularly useful to create and manage BindableEvent and BindableFunction instances for client-side communication.
-	
-	:::info
-	Note that instances created by this function in the client will not replicate to the server, or other clients.
-	:::
-	
-	@param InstanceClass -- The class of the Instance
-	@param InstanceName -- The name of the Instance
-]=]
-function Overture:GetLocal(InstanceClass: string, InstanceName: string): Instance
-	return Retrieve(InstanceName, InstanceClass, (Retrieve("Local" .. InstanceClass, "Folder", script)))
-end
-
---[=[
-	Returns an instance of the specified class.
-	If an instance of the same class and name already exists, it will be returned. Otherwise, the method will yield until one exists.
-	
-	@yields
-	@param InstanceClass -- The class of the Instance
-	@param InstanceName -- The name of the Instance
-]=]
-function Overture:WaitFor(InstanceClass: string, InstanceName: string): Instance
-	return Retrieve(InstanceClass, "Folder", script, RunService:IsClient()):WaitForChild(InstanceName, math.huge)
-end
-
---[=[
-	Returns an instance of the specified class.
 	
 	If an instance of the same class and name already exists, it will be returned.
 	Otherwise, when called from the client, the method will yield until one exists; if called from the server, a new one will be created.
+	
+	@tag Instance Retrieval
 	
 	@yields
 	@param InstanceClass -- The class of the Instance
@@ -196,6 +176,39 @@ function Overture:Get(InstanceClass: string, InstanceName: string): Instance
 	else
 		return Retrieve(InstanceName, InstanceClass, SetFolder)
 	end
+end
+
+--[=[
+	Returns an instance of the specified class.
+	If an instance of the same class and name already exists, it will be returned. Otherwise, a new one will be created.
+	
+	This function can be particularly useful to create and manage BindableEvent and BindableFunction instances for client-side communication.
+	
+	:::info
+	Note that instances created by this function in the client will not replicate to the server, or other clients.
+	:::
+	
+	@tag Instance Retrieval
+	
+	@param InstanceClass -- The class of the Instance
+	@param InstanceName -- The name of the Instance
+]=]
+function Overture:GetLocal(InstanceClass: string, InstanceName: string): Instance
+	return Retrieve(InstanceName, InstanceClass, (Retrieve("Local" .. InstanceClass, "Folder", script)))
+end
+
+--[=[
+	Returns an instance of the specified class.
+	If an instance of the same class and name already exists, it will be returned. Otherwise, the method will yield until one exists.
+	
+	@tag Instance Retrieval
+	
+	@yields
+	@param InstanceClass -- The class of the Instance
+	@param InstanceName -- The name of the Instance
+]=]
+function Overture:WaitFor(InstanceClass: string, InstanceName: string): Instance
+	return Retrieve(InstanceClass, "Folder", script, RunService:IsClient()):WaitForChild(InstanceName, math.huge)
 end
 
 task.spawn(BindToTag, "oLibrary", function(Object)
