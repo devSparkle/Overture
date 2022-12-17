@@ -42,6 +42,7 @@ jobs:
   publish:
     if: github.event_name == 'release'
     
+    needs: build
     runs-on: ubuntu-latest
     
     steps:
