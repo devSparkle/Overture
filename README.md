@@ -17,5 +17,5 @@ Head over to the [releases tab](http://github.com/devSparkle/Overture/releases) 
 Then, require it in your code like the example below:
 
 ```lua
-local Overture = require(game:GetService("ReplicatedStorage"):WaitForChild("Oveture"))
+local Overture = require(game:GetService("ReplicatedStorage"):WaitForChild("Overture"))
 ```
