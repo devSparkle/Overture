@@ -112,12 +112,12 @@ end
 ]=]
 function Overture:LoadLibrary(Index: string, NamedImports: {string}?)
 	if Libraries[Index] then
-		return RequireModule(Libraries[Index])
+		return RequireModule(Libraries[Index], NamedImports)
 	else
 		assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
 		
 		table.insert(LibraryThreadCache, {Thread = coroutine.running(), RequestedIndex = Index, RequestedAt = time()})
-		return RequireModule(coroutine.yield())
+		return RequireModule(coroutine.yield(), NamedImports)
 	end
 end
 
