@@ -61,6 +61,21 @@ local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConn
 	return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
 end
 
+local function RequireModule(Module: ModuleScript, NamedImports: {string}?)
+	if NamedImports then
+		local Exports = require(Module)
+		local Imports = {}
+		
+		for ImportIndex, ImportName in ipairs(NamedImports) do
+			Imports[ImportIndex] = Exports[ImportName]
+		end
+		
+		return unpack(Imports)
+	else
+		return require(Module)
+	end
+end
+
 --[=[
 	Finds a ModuleScript with the CollectionService `oLibrary` tag,
 	and returns the value that was returned by the given ModuleScript,
@@ -95,14 +110,14 @@ end
 	@param Index -- The name of the ModuleScript
 	@return any?
 ]=]
-function Overture:LoadLibrary(Index: string)
+function Overture:LoadLibrary(Index: string, NamedImports: {string}?)
 	if Libraries[Index] then
-		return require(Libraries[Index])
+		return RequireModule(Libraries[Index])
 	else
 		assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
 		
 		table.insert(LibraryThreadCache, {Thread = coroutine.running(), RequestedIndex = Index, RequestedAt = time()})
-		return require(coroutine.yield())
+		return RequireModule(coroutine.yield())
 	end
 end
 
