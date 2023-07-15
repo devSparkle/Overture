@@ -61,6 +61,14 @@ local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConn
 	return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
 end
 
+--[=[
+	@within Overture
+	@ignore
+	
+	@param Module -- The ModuleScript to require
+	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
+	@return any?
+]=]
 local function RequireModule(Module: ModuleScript, NamedImports: {string}?)
 	if NamedImports then
 		local Exports = require(Module)
