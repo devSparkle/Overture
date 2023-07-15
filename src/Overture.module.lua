@@ -108,6 +108,7 @@ end
 	
 	@yields
 	@param Index -- The name of the ModuleScript
+	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
 	@return any?
 ]=]
 function Overture:LoadLibrary(Index: string, NamedImports: {string}?)
