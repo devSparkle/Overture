@@ -1,0 +1,10 @@
+{
+	"name": "Overture",
+	"tree": {
+		"$className": "DataModel",
+		
+		"ReplicatedStorage": {
+			"$path": "src"
+		}
+	}
+}
