@@ -188,9 +188,10 @@ end
 	@yields
 	@param InstanceClass -- The class of the Instance
 	@param InstanceName -- The name of the Instance
+	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
-function Overture:Get(InstanceClass: string, InstanceName: string): Instance
-	local SetFolder = Retrieve(InstanceClass, "Folder", script, RunService:IsClient())
+function Overture:Get(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
+	local SetFolder = (Parent or Retrieve(InstanceClass, "Folder", script, RunService:IsClient()))
 	local Item = SetFolder:FindFirstChild(InstanceName)
 	
 	if Item then
@@ -216,9 +217,10 @@ end
 	
 	@param InstanceClass -- The class of the Instance
 	@param InstanceName -- The name of the Instance
+	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
-function Overture:GetLocal(InstanceClass: string, InstanceName: string): Instance
-	return Retrieve(InstanceName, InstanceClass, (Retrieve("Local" .. InstanceClass, "Folder", script)))
+function Overture:GetLocal(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
+	return Retrieve(InstanceName, InstanceClass, (Parent or Retrieve("Local" .. InstanceClass, "Folder", script)))
 end
 
 --[=[
@@ -230,9 +232,10 @@ end
 	@yields
 	@param InstanceClass -- The class of the Instance
 	@param InstanceName -- The name of the Instance
+	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
-function Overture:WaitFor(InstanceClass: string, InstanceName: string): Instance
-	return Retrieve(InstanceClass, "Folder", script, RunService:IsClient()):WaitForChild(InstanceName, math.huge)
+function Overture:WaitFor(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
+	return (Parent or Retrieve(InstanceClass, "Folder", script, RunService:IsClient())):WaitForChild(InstanceName, math.huge)
 end
 
 task.spawn(BindToTag, "oLibrary", function(Object)
