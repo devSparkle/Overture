@@ -1,0 +1,6 @@
+# VS Code
+.vscode/*
+
+# Rojo
+/aftman.toml
+/default.project.json
