@@ -72,18 +72,18 @@ end
 	@return any?
 ]=]
 local function RequireModule(Module: ModuleScript, NamedImports: {string}?): any
-    if NamedImports then
-        local Exports: any = require(Module)
-        local Imports: {any} = {}
+	if NamedImports then
+		local Exports: any = require(Module)
+		local Imports: {any} = {}
 
-        for _, ImportName: string in ipairs(NamedImports) do
-            Imports[#Imports + 1] = Exports[ImportName]
-        end
+		for _, ImportName: string in ipairs(NamedImports) do
+			Imports[#Imports + 1] = Exports[ImportName]
+		end
 
-        return unpack(Imports)
-    else
-        return require(Module)
-    end
+		return unpack(Imports)
+	else
+		return require(Module)
+	end
 end
 
 --[=[
