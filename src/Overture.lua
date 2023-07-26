@@ -1,29 +1,30 @@
 --!nonstrict
 --// Initialization
 
-local RunService: RunService = game:GetService("RunService")
-local CollectionService: CollectionService = game:GetService("CollectionService")
+local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 
 --[=[
-    @class Overture
-    
-    The core of Overture revolves around the management of libraries.
-    
-    In Overture, a library is any ModuleScript which is tagged with the CollectionService `oLibrary` tag.
-    Overture itself will make no effort to replicate ModuleScripts, so remember to ensure that they are
-    accessible to both the server and the client; when this behavior is desired.
-    
-    :::info
-    Remember, all library names in Overture must be unique!
-    :::
+	@class Overture
+	
+	The core of Overture revolves around the management of libraries.
+	
+	In Overture, a library is any ModuleScript which is tagged with the CollectionService `oLibrary` tag.
+	Overture itself will make no effort to replicate ModuleScripts, so remember to ensure that they are
+	accessible to both the server and the client; when this behavior is desired.
+	
+	:::info
+	Remember, all library names in Overture must be unique!
+	:::
 ]=]
-local Overture: {[string]: any} = {}
+local Overture = {}
 local LibraryThreadCache: {[number]: {Thread: thread, RequestedIndex: string, RequestedAt: number}} = {}
 local Libraries: {[string]: ModuleScript} = {}
 local LibraryCache: {[string]: ModuleScript} = {}
 local LibraryLoadThreads: {[string]: thread} = {}
 
 --// Functions
+
 --[=[
 	@within Overture
 	
@@ -31,19 +32,19 @@ local LibraryLoadThreads: {[string]: thread} = {}
 	@return Instance
 ]=]
 local function Retrieve(InstanceName: string, InstanceClass: string, InstanceParent: Instance, ForceWait: boolean?): Instance
-    if ForceWait then
-        return InstanceParent:WaitForChild(InstanceName)
-    end
-
-    local SearchInstance: Instance = InstanceParent:FindFirstChild(InstanceName)
-
-    if not SearchInstance then
-        SearchInstance = Instance.new(InstanceClass)
-        SearchInstance.Name = InstanceName
-        SearchInstance.Parent = InstanceParent
-    end
-
-    return SearchInstance
+	if ForceWait then
+		return InstanceParent:WaitForChild(InstanceName)
+	end
+	
+	local SearchInstance = InstanceParent:FindFirstChild(InstanceName)
+	
+	if not SearchInstance then
+		SearchInstance = Instance.new(InstanceClass)
+		SearchInstance.Name = InstanceName
+		SearchInstance.Parent = InstanceParent
+	end
+	
+	return SearchInstance
 end
 
 --[=[
@@ -54,12 +55,12 @@ end
 	@param Function -- The function to call
 	@return any?
 ]=]
-local function BindToTag(Tag: string, Function: (Instance) -> ())
-    for _, Value in ipairs(CollectionService:GetTagged(Tag)) do
-        task.spawn(Function, Value)
-    end
-
-    return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
+local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
+	for _, Value in next, CollectionService:GetTagged(Tag) do
+		task.spawn(Function, Value)
+	end
+	
+	return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
 end
 
 --[=[
@@ -120,44 +121,29 @@ end
 	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
 	@return any?
 ]=]
-local function LoadLibraryAsync(Index: string, NamedImports: {string}?): any
-    local cachedModule: ModuleScript = LibraryCache[Index]
-    if cachedModule then
-        return RequireModule(cachedModule, NamedImports)
-    else
-        local loadThread: thread = LibraryLoadThreads[Index]
-        if loadThread then
-            return RequireModule(coroutine.yield(loadThread), NamedImports)
-        else
-            local currentThread: thread = coroutine.running()
-            LibraryLoadThreads[Index] = currentThread
-
-            local moduleScript: ModuleScript = Libraries[Index]
-            if not moduleScript then
-                assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
-            end
-
-            LibraryCache[Index] = moduleScript
-            LibraryLoadThreads[Index] = nil
-
-            return RequireModule(moduleScript, NamedImports)
-        end
-    end
-end
-
---[=[
-	See `LoadLibraryAsync` for the arguments to this method.
-	This function is the public implementation of `LoadLibraryAsync`.
-
-	@tag Library Management
-
-	@yields
-	@param Index -- The name of the ModuleScript
-	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
-	@return any?
-]=]
 function Overture:LoadLibrary(Index: string, NamedImports: {string}?): any
-    return LoadLibraryAsync(Index, NamedImports)
+	local cachedModule: ModuleScript = LibraryCache[Index]
+	if cachedModule then
+		return RequireModule(cachedModule, NamedImports)
+	else
+		local loadThread: thread = LibraryLoadThreads[Index]
+	if loadThread then
+			return RequireModule(coroutine.yield(loadThread), NamedImports)
+		else
+			local currentThread: thread = coroutine.running()
+			LibraryLoadThreads[Index] = currentThread
+
+			local moduleScript: ModuleScript = Libraries[Index]
+			if not moduleScript then
+				assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
+			end
+
+			LibraryCache[Index] = moduleScript
+			LibraryLoadThreads[Index] = nil
+
+			return RequireModule(moduleScript, NamedImports)
+		end
+	end
 end
 
 --[=[
