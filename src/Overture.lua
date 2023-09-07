@@ -25,9 +25,7 @@ local Libraries: {[string]: ModuleScript} = {}
 
 --[=[
 	@within Overture
-	
 	@ignore
-	@return Instance
 ]=]
 local function Retrieve(InstanceName: string, InstanceClass: string, InstanceParent: Instance, ForceWait: boolean?): Instance
 	if ForceWait then
@@ -51,7 +49,6 @@ end
 	
 	@param Tag -- The CollectionService tag
 	@param Function -- The function to call
-	@return any?
 ]=]
 local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
 	for _, Value in next, CollectionService:GetTagged(Tag) do
