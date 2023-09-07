@@ -196,10 +196,10 @@ function Overture:Get(InstanceClass: string, InstanceName: string, Parent: Insta
 	
 	if Item then
 		return Item
-	elseif RunService:IsClient() then
-		return SetFolder:WaitForChild(InstanceName)
-	else
+	elseif RunService:IsServer() then
 		return Retrieve(InstanceName, InstanceClass, SetFolder)
+	else
+		return SetFolder:WaitForChild(InstanceName)
 	end
 end
 
@@ -235,7 +235,7 @@ end
 	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
 function Overture:WaitFor(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
-	return (Parent or Retrieve(InstanceClass, "Folder", script, RunService:IsClient())):WaitForChild(InstanceName, math.huge)
+	return (Parent or Retrieve(InstanceClass, "Folder", script, not RunService:IsServer())):WaitForChild(InstanceName, math.huge)
 end
 
 task.spawn(BindToTag, "oLibrary", function(Object)
