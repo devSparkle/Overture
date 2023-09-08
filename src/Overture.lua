@@ -28,7 +28,7 @@ local Libraries: {[string]: ModuleScript} = {}
 	@ignore
 ]=]
 local function Retrieve(InstanceName: string, InstanceClass: string, InstanceParent: Instance, ForceWait: boolean?): Instance
-	if ForceWait and not RunService:IsEdit() then
+	if ForceWait and RunService:IsRunning() then
 		return InstanceParent:WaitForChild(InstanceName)
 	end
 	
@@ -193,7 +193,7 @@ function Overture:Get(InstanceClass: string, InstanceName: string, Parent: Insta
 	
 	if Item then
 		return Item
-	elseif RunService:IsServer() or RunService:IsEdit() then
+	elseif RunService:IsServer() or not RunService:IsRunning() then
 		return Retrieve(InstanceName, InstanceClass, SetFolder)
 	else
 		return SetFolder:WaitForChild(InstanceName)
