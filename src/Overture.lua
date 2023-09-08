@@ -28,7 +28,7 @@ local Libraries: {[string]: ModuleScript} = {}
 	@ignore
 ]=]
 local function Retrieve(InstanceName: string, InstanceClass: string, InstanceParent: Instance, ForceWait: boolean?): Instance
-	if ForceWait then
+	if ForceWait and not RunService:IsEdit() then
 		return InstanceParent:WaitForChild(InstanceName)
 	end
 	
@@ -193,7 +193,7 @@ function Overture:Get(InstanceClass: string, InstanceName: string, Parent: Insta
 	
 	if Item then
 		return Item
-	elseif RunService:IsServer() then
+	elseif RunService:IsServer() or RunService:IsEdit() then
 		return Retrieve(InstanceName, InstanceClass, SetFolder)
 	else
 		return SetFolder:WaitForChild(InstanceName)
@@ -232,7 +232,7 @@ end
 	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
 function Overture:WaitFor(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
-	return (Parent or Retrieve(InstanceClass, "Folder", script, not RunService:IsServer())):WaitForChild(InstanceName, math.huge)
+	return (Parent or Retrieve(InstanceClass, "Folder", script, RunService:IsClient())):WaitForChild(InstanceName, math.huge)
 end
 
 task.spawn(BindToTag, "oLibrary", function(Object)
