@@ -1,4 +1,9 @@
-# Overture
+<div align="center">
+	<img src="https://github.com/devSparkle/overture-vscode/blob/main/assets/icon.png" alt="Cmdr" height="150" />
+	<br/>
+</div>
+
+<!--moonwave-hide-before-this-line-->
 
 >**o·ver·ture**  
 >*/ˈōvərCHər,ˈōvərˌCHo͝or/*
