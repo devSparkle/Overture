@@ -24,3 +24,13 @@ Then, require it in your code like the example below:
 ```lua
 local Overture = require(game:GetService("ReplicatedStorage"):WaitForChild("Overture"))
 ```
+
+### Wally
+
+Overture is also available through Wally! Include it in your project by adding the following to your `wally.toml`:
+```toml
+Overture = "devsparkle/overture@^2"
+```
+
+## Extension
+Development with Rojo can be turbocharged with the [VSCode extension for Overture](https://marketplace.visualstudio.com/items?itemName=devSparkle.overture-vscode), which amongst other features provides typechecking support for modules required through `LoadLibrary`.
