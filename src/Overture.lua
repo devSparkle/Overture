@@ -232,8 +232,8 @@ end
 	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
 function Overture:WaitFor(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
-	local isClient = RunService:IsClient()
-	return (Parent or Retrieve(InstanceClass, "Folder", script, isClient)):WaitForChild(InstanceName, isClient and math.huge or nil)
+	local IsClient = RunService:IsClient()
+	return (Parent or Retrieve(InstanceClass, "Folder", script, IsClient)):WaitForChild(InstanceName, if IsClient then math.huge else nil)
 end
 
 task.spawn(BindToTag, "oLibrary", function(Object)
