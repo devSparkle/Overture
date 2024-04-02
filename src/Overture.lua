@@ -51,7 +51,7 @@ end
 	@param Function -- The function to call
 ]=]
 local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
-	for _, Value in next, CollectionService:GetTagged(Tag) do
+	for _, Value in CollectionService:GetTagged(Tag) do
 		task.spawn(Function, Value)
 	end
 	
@@ -238,7 +238,7 @@ end
 task.spawn(BindToTag, "oLibrary", function(Object)
 	Libraries[Object.Name] = Object
 	
-	for _, Cached in next, LibraryThreadCache do
+	for _, Cached in LibraryThreadCache do
 		if Object.Name == Cached.RequestedIndex then
 			task.defer(Cached.Thread, Object)
 			task.delay(1, function()
@@ -252,7 +252,7 @@ task.spawn(function()
 	while script:GetAttribute("Debug") do
 		task.wait(1)
 		
-		for _, Cached in next, LibraryThreadCache do
+		for _, Cached in LibraryThreadCache do
 			if Cached.WarningEmitted then continue end
 			if (time() - Cached.RequestedAt) > 5 then
 				warn(string.format([[Infinite yield possible on Overture:LoadLibrary("%s").]], Cached.RequestedIndex))
