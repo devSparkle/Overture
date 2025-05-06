@@ -1,1 +1,15 @@
 apiCategories = ["Library Management", "Instance Retrieval"]
+
+[docusaurus]
+tagline = "Source code management engine for Roblox."
+
+[navbar]
+title = ""
+
+[navbar.logo]
+alt = "Overture Logo"
+src = "https://github.com/devSparkle/overture-vscode/blob/main/assets/icon-dark.png"
+
+[home]
+enabled = true
+includeReadme = false
