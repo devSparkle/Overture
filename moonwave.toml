@@ -1,1 +1,6 @@
 apiCategories = ["Library Management", "Instance Retrieval"]
+
+[navbar.logo]
+alt = "Overture"
+src = "/icon-dark.png"
+srcDark = "/icon.png"
