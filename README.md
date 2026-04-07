@@ -25,7 +25,7 @@ Then, require it in your code like the example below:
 ```lua
 local Overture = require(game:GetService("ReplicatedStorage"):WaitForChild("Overture"))
 ```
-> **PS:** You can set a "Debug" attribute on the module to get information on yielding librarys
+> You can set a `Debug` attribute on the Overture ModuleScript to get information on yielding libraries.
 
 ### Wally
 
