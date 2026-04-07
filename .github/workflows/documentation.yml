@@ -21,13 +21,10 @@ jobs:
         uses: actions/checkout@v4
         
       # Build steps
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          cache: "npm"
-          cache-dependency-path: "**/.github/workflows/*.yml"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
       - name: Build
-        run: npx moonwave build
+        run: bunx moonwave build
       
       # Upload steps
       - name: Upload artifact
