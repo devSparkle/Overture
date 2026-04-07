@@ -6,7 +6,7 @@
 			"type": "node-terminal",
 			"request": "launch",
 			
-			"command": "moonwave dev",
+			"command": "bunx moonwave dev",
 		},
 	]
 }
