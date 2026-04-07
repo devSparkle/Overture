@@ -18,17 +18,13 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       # Build steps
-      - name: Add Foreman tools
-        run: |
-          echo "[tools]" >> foreman.toml
-          echo 'rojo = { source = "rojo-rbx/rojo", version = "7" }' >> foreman.toml
-      - name: Setup Foreman
-        uses: Roblox/setup-foreman@v3
+      - name: Setup Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          cache: true
       - name: Build
         run: rojo build -o Overture.rbxm
       

@@ -1,5 +1,6 @@
 <div align="center">
-	<img src="https://github.com/devSparkle/overture-vscode/blob/main/assets/icon.png" alt="Cmdr" height="150" />
+	<img src="https://raw.githubusercontent.com/devSparkle/overture-vscode/main/assets/icon-dark.png#gh-light-mode-only" alt="Overture" height="150" />
+	<img src="https://raw.githubusercontent.com/devSparkle/overture-vscode/main/assets/icon.png#gh-dark-mode-only" alt="Overture" height="150" />
 	<br/>
 </div>
 
@@ -24,6 +25,9 @@ Then, require it in your code like the example below:
 ```lua
 local Overture = require(game:GetService("ReplicatedStorage"):WaitForChild("Overture"))
 ```
+
+> [!NOTE]
+> You can set a `Debug` attribute on the Overture ModuleScript to get information on yielding libraries.
 
 ### Wally
 

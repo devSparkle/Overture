@@ -115,6 +115,8 @@ end
 	@param Index -- The name of the ModuleScript
 	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
 	@return any?
+	
+	@error The library `Index` does not exist! -- Thrown on the server, if no ModuleScript exists with the given name.
 ]=]
 function Overture:LoadLibrary(Index: string, NamedImports: {string}?)
 	if Libraries[Index] then
