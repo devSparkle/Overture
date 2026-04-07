@@ -3,6 +3,11 @@
 		"wally.toml": "wally.lock"
 	},
 	
+	"files.exclude": {
+		"DevPackages": true,
+		"Packages": true
+	},
+	
 	"robloxLsp.diagnostics.disable": [
 		"trailing-space"
 	]
