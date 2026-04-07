@@ -1,0 +1,10 @@
+/* Navbar */
+
+.navbar__logo img {
+  transition: opacity var(--ifm-transition-fast)
+    var(--ifm-transition-timing-default);
+}
+
+.navbar__logo img:hover {
+  opacity: 75%;
+}
