@@ -8,6 +8,7 @@
 		"Packages": true
 	},
 	
+	"luau-lsp.sourcemap.rojoProjectFile": "test-place.project.json",
 	"robloxLsp.diagnostics.disable": [
 		"trailing-space"
 	]
