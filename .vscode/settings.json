@@ -1,4 +1,8 @@
 {
+	"explorer.fileNesting.patterns": {
+		"wally.toml": "wally.lock"
+	},
+	
 	"robloxLsp.diagnostics.disable": [
 		"trailing-space"
 	]
