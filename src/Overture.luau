@@ -1,8 +1,8 @@
 --!nonstrict
 --// Initialization
 
-local RunService = game:GetService("RunService")
-local CollectionService = game:GetService("CollectionService")
+const RunService = game:GetService("RunService")
+const CollectionService = game:GetService("CollectionService")
 
 --[=[
 	@class Overture
@@ -17,9 +17,11 @@ local CollectionService = game:GetService("CollectionService")
 	Remember, all library names in Overture must be unique!
 	:::
 ]=]
-local Overture = {}
-local LibraryThreadCache = {}
-local Libraries: {[string]: ModuleScript} = {}
+const Overture = {}
+const LibrarySignalCache: { [string]: { BindableEvent } } = {}
+const Libraries: { [string]: ModuleScript } = {}
+const IsClient = RunService:IsClient()
+local IsDebug = script:GetAttribute("Debug") == true
 
 --// Functions
 
@@ -27,19 +29,24 @@ local Libraries: {[string]: ModuleScript} = {}
 	@within Overture
 	@ignore
 ]=]
-local function Retrieve(InstanceName: string, InstanceClass: string, InstanceParent: Instance, ForceWait: boolean?): Instance
+const function Retrieve(
+	InstanceName: string,
+	InstanceClass: string,
+	InstanceParent: Instance,
+	ForceWait: boolean?
+): Instance
 	if ForceWait and RunService:IsRunning() then
 		return InstanceParent:WaitForChild(InstanceName)
 	end
-	
+
 	local SearchInstance = InstanceParent:FindFirstChild(InstanceName)
-	
+
 	if not SearchInstance then
 		SearchInstance = Instance.new(InstanceClass)
 		SearchInstance.Name = InstanceName
 		SearchInstance.Parent = InstanceParent
 	end
-	
+
 	return SearchInstance
 end
 
@@ -50,11 +57,11 @@ end
 	@param Tag -- The CollectionService tag
 	@param Function -- The function to call
 ]=]
-local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
+const function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
 	for _, Value in CollectionService:GetTagged(Tag) do
 		task.spawn(Function, Value)
 	end
-	
+
 	return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
 end
 
@@ -64,17 +71,16 @@ end
 	
 	@param Module -- The ModuleScript to require
 	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
-	@return any?
 ]=]
-local function RequireModule(Module: ModuleScript, NamedImports: {string}?)
+const function RequireModule(Module: ModuleScript, NamedImports: { string }?): any?
 	if NamedImports then
-		local Exports = require(Module)
-		local Imports = {}
-		
+		const Exports = require(Module)
+		const Imports = {}
+
 		for ImportIndex, ImportName in ipairs(NamedImports) do
 			Imports[ImportIndex] = Exports[ImportName]
 		end
-		
+
 		return unpack(Imports)
 	else
 		return require(Module)
@@ -114,18 +120,35 @@ end
 	@yields
 	@param Index -- The name of the ModuleScript
 	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
-	@return any?
 	
 	@error The library `Index` does not exist! -- Thrown on the server, if no ModuleScript exists with the given name.
 ]=]
-function Overture:LoadLibrary(Index: string, NamedImports: {string}?)
+function Overture:LoadLibrary(Index: string, NamedImports: { string }?): any?
 	if Libraries[Index] then
 		return RequireModule(Libraries[Index], NamedImports)
 	else
-		assert(not RunService:IsServer(), "The library \"" .. Index .. "\" does not exist!")
-		
-		table.insert(LibraryThreadCache, {Thread = coroutine.running(), RequestedIndex = Index, RequestedAt = time()})
-		return RequireModule(coroutine.yield(), NamedImports)
+		assert(IsClient, `The library "{Index}" does not exist!`)
+
+		LibrarySignalCache[Index] = LibrarySignalCache[Index] or {}
+		const Signal = Instance.new("BindableEvent")
+		table.insert(LibrarySignalCache[Index], Signal)
+
+		const CallStack = `{debug.traceback("Stack Begin")}Stack End`
+		local DebugThread: thread?
+		if IsDebug then
+			DebugThread = task.delay(5, function()
+				warn(`Infinite yield possible on 'Overture:LoadLibrary("{Index}")'`)
+				for _, line in CallStack:split("\n") do
+					print(`{line}`)
+				end
+			end)
+		end
+
+		local Object = Signal.Event:Wait()
+		if DebugThread then
+			task.cancel(DebugThread)
+		end
+		return RequireModule(Object, NamedImports)
 	end
 end
 
@@ -145,12 +168,9 @@ end
 	@yields
 	@client
 	@param ... any
-	@return any?
 ]=]
-function Overture:LoadLibraryOnClient(...)
-	if RunService:IsClient() then
-		return self:LoadLibrary(...)
-	end
+function Overture:LoadLibraryOnClient(...): any?
+	return if IsClient then self:LoadLibrary(...) else nil
 end
 
 --[=[
@@ -168,12 +188,9 @@ end
 	
 	@server
 	@param ... any
-	@return any?
 ]=]
-function Overture:LoadLibraryOnServer(...)
-	if RunService:IsServer() then
-		return self:LoadLibrary(...)
-	end
+function Overture:LoadLibraryOnServer(...): any?
+	return if IsClient then nil else self:LoadLibrary(...)
 end
 
 --[=[
@@ -190,12 +207,12 @@ end
 	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
 function Overture:Get(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
-	local SetFolder = (Parent or Retrieve(InstanceClass, "Folder", script, RunService:IsClient()))
-	local Item = SetFolder:FindFirstChild(InstanceName)
-	
+	const SetFolder = (Parent or Retrieve(InstanceClass, "Folder", script, IsClient))
+	const Item = SetFolder:FindFirstChild(InstanceName)
+
 	if Item then
 		return Item
-	elseif RunService:IsServer() or not RunService:IsRunning() then
+	elseif not IsClient or not RunService:IsRunning() then
 		return Retrieve(InstanceName, InstanceClass, SetFolder)
 	else
 		return SetFolder:WaitForChild(InstanceName)
@@ -234,35 +251,26 @@ end
 	@param Parent -- An optional override parent Instance. Useful for retrieving dependencies.
 ]=]
 function Overture:WaitFor(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
-	local IsClient = RunService:IsClient()
-	return (Parent or Retrieve(InstanceClass, "Folder", script, IsClient)):WaitForChild(InstanceName, if IsClient then math.huge else nil)
+	return (Parent or Retrieve(InstanceClass, "Folder", script, IsClient) :: any) --// silence linter
+		:WaitForChild(InstanceName, if IsClient then math.huge else nil) :: Instance
 end
 
 task.spawn(BindToTag, "oLibrary", function(Object)
 	Libraries[Object.Name] = Object
-	
-	for _, Cached in LibraryThreadCache do
-		if Object.Name == Cached.RequestedIndex then
-			task.defer(Cached.Thread, Object)
-			task.delay(1, function()
-				table.remove(LibraryThreadCache, table.find(LibraryThreadCache, Cached))
-			end)
-		end
+
+	if not LibrarySignalCache[Object.Name] then
+		return
 	end
+
+	for _, signal in LibrarySignalCache[Object.Name] do
+		signal:Fire(Object)
+	end
+
+	LibrarySignalCache[Object.Name] = nil
 end)
 
-task.spawn(function()
-	while script:GetAttribute("Debug") do
-		task.wait(1)
-		
-		for _, Cached in LibraryThreadCache do
-			if Cached.WarningEmitted then continue end
-			if (time() - Cached.RequestedAt) > 5 then
-				warn(string.format([[Infinite yield possible on Overture:LoadLibrary("%s").]], Cached.RequestedIndex))
-				Cached.WarningEmitted = true
-			end
-		end
-	end
+script:GetAttributeChangedSignal("Debug"):Connect(function()
+	IsDebug = script:GetAttribute("Debug") == true
 end)
 
 --// Triggers
