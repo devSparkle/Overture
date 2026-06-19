@@ -18,10 +18,12 @@ const CollectionService = game:GetService("CollectionService")
 	:::
 ]=]
 const Overture = {}
+
 const LibrarySignalCache: { [string]: { BindableEvent } } = {}
 const Libraries: { [string]: ModuleScript } = {}
+
 const IsClient = RunService:IsClient()
-local IsDebug = script:GetAttribute("Debug") == true
+local IsDebug = (script:GetAttribute("Debug") == true)
 
 --// Functions
 
@@ -38,15 +40,15 @@ const function Retrieve(
 	if ForceWait and RunService:IsRunning() then
 		return InstanceParent:WaitForChild(InstanceName)
 	end
-
+	
 	local SearchInstance = InstanceParent:FindFirstChild(InstanceName)
-
+	
 	if not SearchInstance then
 		SearchInstance = Instance.new(InstanceClass)
 		SearchInstance.Name = InstanceName
 		SearchInstance.Parent = InstanceParent
 	end
-
+	
 	return SearchInstance
 end
 
@@ -61,7 +63,7 @@ const function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConn
 	for _, Value in CollectionService:GetTagged(Tag) do
 		task.spawn(Function, Value)
 	end
-
+	
 	return CollectionService:GetInstanceAddedSignal(Tag):Connect(Function)
 end
 
@@ -76,11 +78,11 @@ const function RequireModule(Module: ModuleScript, NamedImports: { string }?): a
 	if NamedImports then
 		const Exports = require(Module)
 		const Imports = {}
-
+		
 		for ImportIndex, ImportName in ipairs(NamedImports) do
 			Imports[ImportIndex] = Exports[ImportName]
 		end
-
+		
 		return unpack(Imports)
 	else
 		return require(Module)
@@ -128,11 +130,11 @@ function Overture:LoadLibrary(Index: string, NamedImports: { string }?): any?
 		return RequireModule(Libraries[Index], NamedImports)
 	else
 		assert(IsClient, `The library "{Index}" does not exist!`)
-
+		
 		LibrarySignalCache[Index] = LibrarySignalCache[Index] or {}
 		const Signal = Instance.new("BindableEvent")
 		table.insert(LibrarySignalCache[Index], Signal)
-
+		
 		const CallStack = `{debug.traceback("Stack Begin")}Stack End`
 		local DebugThread: thread?
 		if IsDebug then
@@ -143,7 +145,7 @@ function Overture:LoadLibrary(Index: string, NamedImports: { string }?): any?
 				end
 			end)
 		end
-
+		
 		local Object = Signal.Event:Wait()
 		if DebugThread then
 			task.cancel(DebugThread)
@@ -209,7 +211,7 @@ end
 function Overture:Get(InstanceClass: string, InstanceName: string, Parent: Instance?): Instance
 	const SetFolder = (Parent or Retrieve(InstanceClass, "Folder", script, IsClient))
 	const Item = SetFolder:FindFirstChild(InstanceName)
-
+	
 	if Item then
 		return Item
 	elseif not IsClient or not RunService:IsRunning() then
@@ -257,22 +259,22 @@ end
 
 task.spawn(BindToTag, "oLibrary", function(Object)
 	Libraries[Object.Name] = Object
-
+	
 	if not LibrarySignalCache[Object.Name] then
 		return
 	end
-
+	
 	for _, signal in LibrarySignalCache[Object.Name] do
 		signal:Fire(Object)
 	end
-
+	
 	LibrarySignalCache[Object.Name] = nil
 end)
 
-script:GetAttributeChangedSignal("Debug"):Connect(function()
-	IsDebug = script:GetAttribute("Debug") == true
-end)
-
 --// Triggers
+
+script:GetAttributeChangedSignal("Debug"):Connect(function()
+	IsDebug = (script:GetAttribute("Debug") == true)
+end)
 
 return Overture
