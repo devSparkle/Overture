@@ -19,11 +19,15 @@ const CollectionService = game:GetService("CollectionService")
 ]=]
 const Overture = {}
 
-const LibrarySignalCache: { [string]: { BindableEvent } } = {}
-const Libraries: { [string]: ModuleScript } = {}
+const LibrarySignalCache: {[string]: {BindableEvent}} = {}
+const Libraries: {[string]: ModuleScript} = {}
 
 const IsClient = RunService:IsClient()
 local IsDebug = (script:GetAttribute("Debug") == true)
+
+--// Variables
+
+const YIELD_WARN_DELAY = 5
 
 --// Functions
 
@@ -125,31 +129,35 @@ end
 	
 	@error The library `Index` does not exist! -- Thrown on the server, if no ModuleScript exists with the given name.
 ]=]
-function Overture:LoadLibrary(Index: string, NamedImports: { string }?): any?
+function Overture:LoadLibrary(Index: string, NamedImports: {string}?): any?
 	if Libraries[Index] then
 		return RequireModule(Libraries[Index], NamedImports)
 	else
 		assert(IsClient, `The library "{Index}" does not exist!`)
 		
-		LibrarySignalCache[Index] = LibrarySignalCache[Index] or {}
+		LibrarySignalCache[Index] = (LibrarySignalCache[Index] or {})
 		const Signal = Instance.new("BindableEvent")
 		table.insert(LibrarySignalCache[Index], Signal)
 		
 		const CallStack = `{debug.traceback("Stack Begin")}Stack End`
-		local DebugThread: thread?
-		if IsDebug then
-			DebugThread = task.delay(5, function()
-				warn(`Infinite yield possible on 'Overture:LoadLibrary("{Index}")'`)
-				for _, line in CallStack:split("\n") do
-					print(`{line}`)
-				end
-			end)
+		local DebugThread: thread? do
+			if IsDebug then
+				DebugThread = task.delay(YIELD_WARN_DELAY, function()
+					warn(`Infinite yield possible on 'Overture:LoadLibrary("{Index}")'`)
+					
+					for _, line in CallStack:split("\n") do
+						print(`{line}`)
+					end
+				end)
+			end
 		end
 		
 		local Object = Signal.Event:Wait()
+		
 		if DebugThread then
 			pcall(task.cancel, DebugThread)
 		end
+		
 		return RequireModule(Object, NamedImports)
 	end
 end
@@ -264,8 +272,8 @@ task.spawn(BindToTag, "oLibrary", function(Object)
 		return
 	end
 	
-	for _, signal in LibrarySignalCache[Object.Name] do
-		signal:Fire(Object)
+	for _, Signal in LibrarySignalCache[Object.Name] do
+		Signal:Fire(Object)
 	end
 	
 	LibrarySignalCache[Object.Name] = nil
