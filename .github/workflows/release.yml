@@ -2,8 +2,10 @@ name: Build and Publish Binaries
 run-name: Release binaries for ${{ github.ref_name }} by @${{ github.actor }}
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
+  push:
+    paths:
+      - "wally.toml"
 
 permissions:
   contents: write
@@ -13,23 +15,90 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ fromJSON(steps.set_manifest.outputs.manifest).package.version }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      
+      - name: Setup Rokit
+        uses: CompeyDev/setup-rokit@v0.2.1
+        with:
+          cache: true
+      
+      - name: Set Manifest
+        id: set_manifest
+        run: echo "manifest=$(wally manifest-to-json)" >> $GITHUB_OUTPUT
+  
   build:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v6
       
       # Build steps
       - name: Setup Rokit
-        uses: CompeyDev/setup-rokit@v0.1.2
+        uses: CompeyDev/setup-rokit@v0.2.1
         with:
           cache: true
       - name: Build
         run: rojo build -o Overture.rbxm
       
       # Upload steps
-      - name: Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload build
+        uses: actions/upload-artifact@v7
         with:
-          files: Overture.rbxm
+          path: "*.rbxm"
+          if-no-files-found: error
+  
+  publish-github:
+    if: github.ref == 'refs/heads/main' || (contains(needs.manifest.outputs.version, '-') && github.event_name == 'workflow_dispatch')
+    
+    needs: [build, manifest]
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download
+        uses: actions/download-artifact@v7
+        
+      - uses: ncipollo/release-action@v1
+        with:
+          name: ${{ needs.manifest.outputs.version }}
+          tag: v${{ needs.manifest.outputs.version }}
+          commit: ${{ github.head_ref || github.ref_name }} 
+          artifacts: "**/*.rbxm"
+          prerelease: ${{ contains(needs.manifest.outputs.version, '-') }}
+          generateReleaseNotes: true
+  
+  publish-wally:
+    needs: [build, publish-github]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        
+      - name: Setup Rokit
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          cache: true
+      
+      - name: Log in to wally
+        env:
+          WALLY_AUTH: |
+            [tokens]
+            "https://api.wally.run/" = "${{ secrets.WALLY_AUTH }}"
+        run: |
+          mkdir ~/.wally
+          printenv WALLY_AUTH > ~/.wally/auth.toml
+      
+      - name: Push update to wally
+        run: wally publish
