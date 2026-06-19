@@ -1,6 +1,7 @@
 --!nonstrict
 --// Initialization
 
+const LogService = game:GetService("LogService")
 const RunService = game:GetService("RunService")
 const CollectionService = game:GetService("CollectionService")
 
@@ -143,10 +144,12 @@ function Overture:LoadLibrary(Index: string, NamedImports: {string}?): any?
 		local DebugThread: thread? do
 			if IsDebug then
 				DebugThread = task.delay(YIELD_WARN_DELAY, function()
-					warn(`Infinite yield possible on 'Overture:LoadLibrary("{Index}")'`)
+					LogService:Warn([[Infinite yield possible on 'Overture:LoadLibrary("{LibraryName}")']], {
+						LibraryName = Index
+					})
 					
 					for _, Line in string.split(CallStack, "\n") do
-						print(Line)
+						LogService:Info(Line)
 					end
 				end)
 			end
