@@ -1,6 +1,6 @@
 {
 	"name": "Overture",
 	"tree": {
-		"$path": "src/Overture.lua"
+		"$path": "src/Overture.luau"
 	}
 }
