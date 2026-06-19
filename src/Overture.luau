@@ -148,7 +148,7 @@ function Overture:LoadLibrary(Index: string, NamedImports: { string }?): any?
 		
 		local Object = Signal.Event:Wait()
 		if DebugThread then
-			task.cancel(DebugThread)
+			pcall(task.cancel, DebugThread)
 		end
 		return RequireModule(Object, NamedImports)
 	end
