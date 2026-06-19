@@ -145,8 +145,8 @@ function Overture:LoadLibrary(Index: string, NamedImports: {string}?): any?
 				DebugThread = task.delay(YIELD_WARN_DELAY, function()
 					warn(`Infinite yield possible on 'Overture:LoadLibrary("{Index}")'`)
 					
-					for _, line in CallStack:split("\n") do
-						print(`{line}`)
+					for _, Line in string.split(CallStack, "\n") do
+						print(Line)
 					end
 				end)
 			end
