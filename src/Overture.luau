@@ -20,7 +20,7 @@ const CollectionService = game:GetService("CollectionService")
 ]=]
 const Overture = {}
 
-const LibrarySignalCache: {[string]: {BindableEvent}} = {}
+const LibrarySignalCache = {}
 const Libraries: {[string]: ModuleScript} = {}
 
 const IsClient = RunService:IsClient()
@@ -136,10 +136,6 @@ function Overture:LoadLibrary(Index: string, NamedImports: {string}?): any?
 	else
 		assert(IsClient, `The library "{Index}" does not exist!`)
 		
-		LibrarySignalCache[Index] = (LibrarySignalCache[Index] or {})
-		const Signal = Instance.new("BindableEvent")
-		table.insert(LibrarySignalCache[Index], Signal)
-		
 		const CallStack = `{debug.traceback("Stack Begin")}Stack End`
 		local DebugThread: thread? do
 			if IsDebug then
@@ -155,7 +151,10 @@ function Overture:LoadLibrary(Index: string, NamedImports: {string}?): any?
 			end
 		end
 		
-		local Object = Signal.Event:Wait()
+		LibrarySignalCache[Index] = (LibrarySignalCache[Index] or {})
+		table.insert(LibrarySignalCache[Index], coroutine.running())
+		
+		local Object = coroutine.yield()
 		
 		if DebugThread then
 			pcall(task.cancel, DebugThread)
@@ -275,8 +274,8 @@ task.spawn(BindToTag, "oLibrary", function(Object)
 		return
 	end
 	
-	for _, Signal in LibrarySignalCache[Object.Name] do
-		Signal:Fire(Object)
+	for _, Thread in LibrarySignalCache[Object.Name] do
+		task.spawn(Thread)
 	end
 	
 	LibrarySignalCache[Object.Name] = nil
