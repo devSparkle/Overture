@@ -36,7 +36,7 @@ const YIELD_WARN_DELAY = 5
 	@within Overture
 	@ignore
 ]=]
-const function Retrieve(
+local function Retrieve(
 	InstanceName: string,
 	InstanceClass: string,
 	InstanceParent: Instance,
@@ -64,7 +64,7 @@ end
 	@param Tag -- The CollectionService tag
 	@param Function -- The function to call
 ]=]
-const function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
+local function BindToTag(Tag: string, Function: (Instance) -> ()): RBXScriptConnection
 	for _, Value in CollectionService:GetTagged(Tag) do
 		task.spawn(Function, Value)
 	end
@@ -79,7 +79,7 @@ end
 	@param Module -- The ModuleScript to require
 	@param NamedImports -- When provided, returns the named variables instead of the entire ModuleScript
 ]=]
-const function RequireModule(Module: ModuleScript, NamedImports: { string }?): any?
+local function RequireModule(Module: ModuleScript, NamedImports: { string }?): any?
 	if NamedImports then
 		const Exports = require(Module)
 		const Imports = {}
