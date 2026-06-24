@@ -23,7 +23,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       
       - name: Setup Rokit
         uses: CompeyDev/setup-rokit@v0.2.1
@@ -39,7 +39,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       
       # Build steps
       - name: Setup Rokit
@@ -85,7 +85,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         
       - name: Setup Rokit
         uses: CompeyDev/setup-rokit@v0.2.1
